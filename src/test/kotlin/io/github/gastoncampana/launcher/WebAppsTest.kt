@@ -1,0 +1,158 @@
+package io.github.gastoncampana.launcher
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class WebAppsTest {
+    private val board = Target.Shortcut("browser", "board", "Board")
+    private val music = Target.Shortcut("browser", "music", "Music")
+    private val packaged = Target.App("web.apk/web.Main#0")
+
+    @Test
+    fun packagedWebAppsNeedBothWebMetadataUrls() {
+        assertTrue(isPackagedWebApp("https://board.example.test/", "https://board.example.test/manifest.json"))
+        assertTrue(isPackagedWebApp("http://board.example.test/", "http://board.example.test/manifest.json"))
+        assertFalse(isPackagedWebApp(null, "https://board.example.test/manifest.json"))
+        assertFalse(isPackagedWebApp("https://board.example.test/", null))
+        assertFalse(isPackagedWebApp("javascript:alert(1)", "https://board.example.test/manifest.json"))
+        assertFalse(isPackagedWebApp("https://", "https://board.example.test/manifest.json"))
+        assertFalse(isPackagedWebApp("not a URL", "https://board.example.test/manifest.json"))
+    }
+
+    @Test
+    fun browserWebShortcutsExcludeOrdinaryAppActionsAndDisabledEntries() {
+        assertTrue(isBrowserWebShortcut(browser = true, pinned = true, dynamic = false, manifest = false, enabled = true))
+        assertFalse(isBrowserWebShortcut(browser = false, pinned = true, dynamic = false, manifest = false, enabled = true))
+        assertFalse(isBrowserWebShortcut(browser = true, pinned = false, dynamic = false, manifest = false, enabled = true))
+        assertFalse(isBrowserWebShortcut(browser = true, pinned = true, dynamic = true, manifest = false, enabled = true))
+        assertFalse(isBrowserWebShortcut(browser = true, pinned = true, dynamic = false, manifest = true, enabled = true))
+        assertFalse(isBrowserWebShortcut(browser = true, pinned = true, dynamic = false, manifest = false, enabled = false))
+    }
+
+    @Test
+    fun drawerIdentitiesKeepWebAppsFromOneBrowserSeparate() {
+        assertNotEquals(board.entryId(), music.entryId())
+        assertNotEquals(board.entryId(), Target.Shortcut("other.browser", "board", "Board").entryId())
+        assertEquals(board.entryId(), board.copy(label = "Renamed").entryId())
+        assertEquals(packaged.id, packaged.entryId())
+        assertNotEquals(Target.Shortcut("a", "bc", "").entryId(), Target.Shortcut("ab", "c", "").entryId())
+    }
+
+    @Test
+    fun drawerLookupNeverFallsBackFromOneWebShortcutToAnother() {
+        val entries = listOf<Target>(packaged, Target.App("browser/browser.Main#0"), board, music)
+        val find = drawerFinder(entries) { it }
+        assertEquals(board, find(board.entryId()))
+        assertEquals(music, find(music.entryId()))
+        assertNull(find(Target.Shortcut("browser", "missing", "Missing").entryId()))
+        assertEquals(packaged, find("web.apk/web.Alias#0"))
+        assertNull(find("web.apk/web.Main#10"))
+    }
+
+    @Test
+    fun webShortcutsCanBeTabbedAndHiddenIndependently() {
+        val entries = listOf<Target>(board, music, packaged)
+        val find = drawerFinder(entries) { it }
+        val chosen = Tab("Board", setOf(board.entryId()), hideApps = true)
+        val all = Tab("Apps")
+        assertEquals(listOf(board), tabApps(chosen, listOf(chosen, all), entries, find))
+        assertEquals(listOf(music, packaged), tabApps(all, listOf(chosen, all), entries, find))
+        assertEquals(listOf(music, packaged), tabApps(all, listOf(all), entries, find, setOf(board.entryId())))
+    }
+
+    @Test
+    fun firstDiscoveryAddsExistingWebAppsWithoutMovingSavedItems() {
+        val widget = Item.Widget("clock/Provider", 42, Cell(0f, 0f, 2f, 2f))
+        val before = Layout(desktop = listOf(listOf(widget)))
+        val result = before.withWebApps(listOf(board, music, packaged), emptySet())
+        assertEquals(widget, result.layout.desktop[0][0])
+        assertEquals(setOf(board, music, packaged), result.layout.desktop.flatten().filterIsInstance<Item.Icon>().map { it.target }.toSet())
+        assertEquals(3, result.known.size)
+        val items = result.layout.desktop.flatten()
+        items.forEachIndexed { index, item -> assertFalse(items.drop(index + 1).any { it.cell.overlaps(item.cell) }) }
+    }
+
+    @Test
+    fun discoveryIsIdempotentAndDoesNotUndoIntentionalRemoval() {
+        val first = Layout().withWebApps(listOf(board, board, music), emptySet())
+        assertEquals(2, first.layout.desktop.flatten().filterIsInstance<Item.Icon>().size)
+        val second = first.layout.withWebApps(listOf(board, music), first.known)
+        assertEquals(first, second)
+        val removed = first.layout.copy(desktop = first.layout.desktop.map { page -> page.filterNot { it is Item.Icon && it.target == board } })
+        assertEquals(removed, removed.withWebApps(listOf(board, music), first.known).layout)
+    }
+
+    @Test
+    fun aTemporaryEmptyDiscoveryDoesNotForgetIntentionalRemoval() {
+        val first = Layout().withWebApps(listOf(board), emptySet())
+        assertEquals(1, first.known.size)
+        val removed = Layout()
+        val empty = removed.withWebApps(emptyList(), first.known)
+        assertEquals(first.known, empty.known)
+        assertEquals(removed, empty.layout.withWebApps(listOf(board), empty.known).layout)
+    }
+
+    @Test
+    fun discoveryPreservesDockedTargetsAndRenamedShortcuts() {
+        val renamed = board.copy(label = "My board")
+        val desktop = listOf(Item.Icon(renamed, "Custom title", Cell(3f, 2f)))
+        val before = Layout(desktop = listOf(desktop), dock = listOf(listOf(DockIcon(up = music))))
+        assertEquals(before, before.withWebApps(listOf(board, music), emptySet()).layout)
+    }
+
+    @Test
+    fun aChangedNativeAliasDoesNotDuplicateOrReinsertAWebApp() {
+        val alias = Target.App("web.apk/web.Alias#0")
+        val before = Layout(desktop = listOf(listOf(Item.Icon(alias, "Board", Cell(4f, 4f)))))
+        val first = before.withWebApps(listOf(packaged), emptySet())
+        assertEquals(1, first.known.size)
+        assertEquals(before, first.layout)
+        assertEquals(Layout(), Layout().withWebApps(listOf(alias), first.known).layout)
+    }
+
+    @Test
+    fun hiddenWebAppsAreNotAutomaticallyPlacedOnHome() {
+        val hidden = Layout(hidden = setOf(board.entryId(), "web.apk/web.Alias#0"))
+        val result = hidden.withWebApps(listOf(board, packaged, music), emptySet())
+        assertEquals(listOf(music), result.layout.desktop.flatten().filterIsInstance<Item.Icon>().map { it.target })
+        assertEquals(3, result.known.size)
+    }
+
+    @Test
+    fun fullPagesGetANewPageInsteadOfRejectingTheInstalledWebApp() {
+        val before = Layout(columns = 2, rows = 2, desktop = listOf(listOf(Item.Widget("clock/Provider", 42, Cell(0f, 0f, 2f, 2f)))))
+        val after = before.withWebApps(listOf(board), emptySet()).layout
+        assertEquals(before.desktop[0], after.desktop[0])
+        assertEquals(2, after.desktop.size)
+        assertEquals(board, (after.desktop[1].single() as Item.Icon).target)
+    }
+
+    @Test
+    fun automaticPlacementPrefersTheMainPageAndPreservesTheDefault() {
+        val before = Layout(defaultPage = 1, desktop = listOf(emptyList(), emptyList()))
+        val after = before.withWebApps(listOf(board), emptySet()).layout
+        assertTrue(after.desktop[0].isEmpty())
+        assertEquals(board, (after.desktop[1].single() as Item.Icon).target)
+        assertEquals(1, after.defaultPage)
+    }
+
+    @Test
+    fun explicitPinIsIdempotentAndCanRestoreAnIntentionallyRemovedIcon() {
+        val once = Layout().withPinnedIcon(board, "Board")
+        assertEquals(listOf(board), once.desktop.flatten().filterIsInstance<Item.Icon>().map { it.target })
+        assertEquals(once, once.withPinnedIcon(board.copy(label = "Renamed"), "Renamed"))
+        assertEquals(board, (Layout().withPinnedIcon(board, "Board").desktop[0].single() as Item.Icon).target)
+    }
+
+    @Test
+    fun webEntriesAndTheirTabMembershipSurviveLayoutBackup() {
+        val layout = Layout(tabs = listOf(Tab("Web", setOf(board.entryId(), music.entryId()))), hidden = setOf(music.entryId()))
+            .withPinnedIcon(board, "Board")
+        assertEquals(listOf(board), layout.desktop.flatten().filterIsInstance<Item.Icon>().map { it.target })
+        assertEquals(layout, parseLayout(layout.toJson()))
+    }
+}

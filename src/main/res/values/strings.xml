@@ -275,7 +275,7 @@
 
     <!-- A shortcut another app asks to pin -->
     <string name="pin_text">“%1$s”, from %2$s</string>
-    <string name="pin_no_room">No room on the home screen</string>
+
     <string name="pin_add_failed">Couldn\'t add “%1$s”</string>
     <string name="pin_added">Added to home screen</string>
 
@@ -303,7 +303,7 @@
     <string name="guide_tidy_how">Lists what is broken, duplicated or empty, each with its own Remove; nothing goes by itself</string>
     <string name="guide_paused_how">Apps paused by Focus mode or Digital Wellbeing are greyed out; Settings → Home screen can hide them instead</string>
     <string name="guide_pin">Shortcuts from other apps</string>
-    <string name="guide_pin_how">When an app, such as a browser, adds a shortcut to the home screen, Islauncher asks you first</string>
+    <string name="guide_pin_how">When an app, such as a browser, adds a shortcut to the home screen, Islauncher asks you first. If the pages are full, it adds a page</string>
     <string name="guide_widget_add_how">Long-press an empty spot → Add widget; search by app or name, with each one\'s preview and size</string>
     <string name="guide_resize_how">Long-press a widget → Resize, then drag the dots on its sides; tap outside when done</string>
     <string name="guide_reconfigure_how">Long-press a widget → Set up again, then tap it: its setup screen opens again, unless it has none or its setup is optional</string>
@@ -318,6 +318,8 @@
     <string name="guide_dock_pages_how">Add, reorder and remove dock pages and set the icons per page in Settings → Dock; swipe the dock sideways between pages, and with Infinite scroll the last leads to the first. The house marks the main page: the dock starts there and goes back to it after you open an app</string>
     <string name="guide_drawer">Open and close</string>
     <string name="guide_drawer_how">Swipe up on the home screen; to close it, pull down from the top of the list</string>
+    <string name="guide_web_apps">Installed web apps</string>
+    <string name="guide_web_apps_how">Installed WebAPKs and accepted browser web shortcuts appear in the drawer and search, and are added to Home once. Removing a Home icon keeps it in the drawer. Shortcuts pinned by another launcher may need adding again from the browser</string>
     <string name="guide_drawer_grid_how">Its columns, and how many rows fit on one screen, in Settings → App drawer</string>
     <string name="guide_tabs_how">Swipe sideways from one to the next; long-press one to rename it, add a tab, or delete a tab of picked apps</string>
     <string name="guide_tab_apps">A tab\'s apps</string>

@@ -276,7 +276,7 @@ sealed interface Popup {
     data object PausedApps : Popup
 
     /** Apps to tick, like the hidden ones: [ids] reads the set from a layout, [put] writes it back. */
-    class Checklist(val title: String, val ids: (Layout) -> Set<AppId>, val put: (Layout, Set<AppId>) -> Layout) : Popup
+    class Checklist(val title: String, val ids: (Layout) -> Set<AppId>, val nativeOnly: Boolean = false, val put: (Layout, Set<AppId>) -> Layout) : Popup
 }
 
 @Composable
@@ -1034,9 +1034,11 @@ private fun Drawer(l: Launcher, mover: Mover) {
     val tabs = l.layout.tabs
     val pager = rememberPagerState { tabs.size } // one page per tab, swiped sideways as in Nova
     val searching = query.isNotBlank()
-    val results = if (searching) search(l.apps, query, l::usage) { it.label } else emptyList() // the most used first among equals
+    val results = if (searching) search(l.drawerEntries, query, { entry ->
+        if (entry.target is Target.App) entry.app?.let(l::usage) ?: 0.0 else 0.0
+    }) { it.label } else emptyList() // the most used first among equals
     val tabbed = l.tabbed
-    fun appsOf(tab: Int) = tabs.getOrNull(tab)?.let { tabApps(it, tabs, tabbed, l.find, l.layout.hidden) } ?: tabbed
+    fun appsOf(tab: Int) = tabs.getOrNull(tab)?.let { tabApps(it, tabs, tabbed, l.findEntry, l.layout.hidden) } ?: tabbed
     val haptic = rememberHaptic(l)
     // A pull keeps scrolling past the point that closed the drawer: only that point ticks.
     fun close() {
@@ -1072,7 +1074,7 @@ private fun Drawer(l: Launcher, mover: Mover) {
             .onVerticalSwipe(down = ::close)
             .systemBarsPadding(),
     ) {
-        GatedHaptics(l) { SearchField(query, { query = it }, focus) { results.firstOrNull()?.let(l::start) } }
+        GatedHaptics(l) { SearchField(query, { query = it }, focus) { results.firstOrNull()?.let { l.open(it.target) } } }
         BoxWithConstraints(Modifier.weight(1f)) {
             // Rows split the height under the tabs without the keyboard, so they keep their size while searching.
             val padding = GRID_PADDING.calculateTopPadding() + GRID_PADDING.calculateBottomPadding()
@@ -1122,7 +1124,7 @@ private fun Drawer(l: Launcher, mover: Mover) {
 private fun AppGrid(
     l: Launcher,
     mover: Mover,
-    apps: List<App>,
+    apps: List<DrawerEntry>,
     grid: LazyGridState,
     cell: DpSize,
     pullToClose: NestedScrollConnection,
@@ -1301,45 +1303,48 @@ private fun Bubble(text: String, selected: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun DrawerApp(l: Launcher, mover: Mover, app: App, height: Dp, icon: Dp) {
+private fun DrawerApp(l: Launcher, mover: Mover, entry: DrawerEntry, height: Dp, icon: Dp) {
     // Taking the app out of the tab shown removes it from under its menu; the menu must not reopen when it shows up again.
-    DisposableEffect(app.id) { onDispose { if (l.popup == Popup.AppMenu(app.id)) l.popup = null } }
-    val item = remember(app.id, app.label) { Item.Icon(Target.App(app.id), app.label, Cell(0f, 0f)) } // what a drag drops
-    Movable(l, mover, null, item, { l.popup = Popup.AppMenu(app.id) }, Modifier) {
+    DisposableEffect(entry.id) { onDispose { if (l.popup == Popup.AppMenu(entry.id)) l.popup = null } }
+    val item = remember(entry.target, entry.label) { Item.Icon(entry.target, entry.label, Cell(0f, 0f)) } // what a drag drops
+    val app = entry.app.takeIf { entry.target is Target.App }
+    Movable(l, mover, null, item, { l.popup = Popup.AppMenu(entry.id) }, Modifier) {
         Column(
             Modifier
                 .fillMaxWidth()
                 .height(height)
-                .clickable(interactionSource = null, indication = PressScale) { l.start(app) },
+                .clickable(interactionSource = null, indication = PressScale) { l.open(entry.target) },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            AppImage(app, icon)
-            Text(app.label, Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp), style = LABEL, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            EntryImage(entry, icon)
+            Text(entry.label, Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp), style = LABEL, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        val open = l.popup == Popup.AppMenu(app.id)
+        val open = l.popup == Popup.AppMenu(entry.id)
         val shortcuts = rememberShortcuts(l, app, open)
         DropdownMenu(open && shortcuts != null, { l.popup = null }) {
-            AppShortcuts(l, app, shortcuts.orEmpty())
-            MenuItem(l, stringResource(R.string.add_to_home_screen)) { l.addToDesktop(Target.App(app.id), app.label) }
+            if (app != null) AppShortcuts(l, app, shortcuts.orEmpty())
+            MenuItem(l, stringResource(R.string.add_to_home_screen)) { l.addToDesktop(entry.target, entry.label) }
             // Tab toggles leave the menu open so several can be set at once.
             l.layout.tabs.forEachIndexed { i, tab ->
                 val members = tab.apps ?: return@forEachIndexed
-                val inTab = members.any { l.find(it) == app }
+                val inTab = members.any { l.findEntry(it) == entry }
                 DropdownMenuItem({ Text(ticked(inTab, tab.name)) }, onClick = {
-                    l.update { it.copy(tabs = it.tabs.replaced(i) { t -> t.copy(apps = members.toggled(app, app.id, l.find)) }) }
+                    l.update { it.copy(tabs = it.tabs.replaced(i) { t -> t.copy(apps = members.toggled(entry, entry.id, l.findEntry)) }) }
                 })
             }
-            val hidden = l.layout.hidden.any { l.find(it) == app }
+            val hidden = l.layout.hidden.any { l.findEntry(it) == entry }
             MenuItem(l, stringResource(if (hidden) R.string.drawer_show_app else R.string.drawer_hide_app)) {
-                l.update { it.copy(hidden = it.hidden.toggled(app, app.id, l.find)) }
+                l.update { it.copy(hidden = it.hidden.toggled(entry, entry.id, l.findEntry)) }
             }
-            val poison = l.isPoison(app)
-            MenuItem(l, stringResource(if (poison) R.string.poison_unmark else R.string.poison_mark)) {
-                l.update { it.copy(poisons = it.poisons.toggled(app, app.id, l.find)) }
+            if (app != null) {
+                val poison = l.isPoison(app)
+                MenuItem(l, stringResource(if (poison) R.string.poison_unmark else R.string.poison_mark)) {
+                    l.update { it.copy(poisons = it.poisons.toggled(app, app.id, l.find)) }
+                }
+                MenuItem(l, stringResource(R.string.menu_app_info)) { l.showInfo(app) }
+                if (app.removable) MenuItem(l, stringResource(R.string.uninstall)) { l.uninstall(app) }
             }
-            MenuItem(l, stringResource(R.string.menu_app_info)) { l.showInfo(app) }
-            if (app.removable) MenuItem(l, stringResource(R.string.uninstall)) { l.uninstall(app) }
         }
     }
 }
@@ -1418,6 +1423,13 @@ private fun TargetIcon(l: Launcher, target: Target, size: Dp, modifier: Modifier
             if (app != null && !badged) Image(app.icon, null, Modifier.size(size * 0.4f).align(Alignment.BottomEnd).offset(4.dp, 2.dp))
         }
     }
+}
+
+@Composable
+private fun EntryImage(entry: DrawerEntry, size: Dp) {
+    val icon = entry.icon
+    if (icon == null) AppImage(null, size)
+    else Image(icon, entry.label, Modifier.size(size), alpha = if (entry.app?.suspended == true) 0.6f else 1f, colorFilter = if (entry.app?.suspended == true) GREY else null)
 }
 
 @Composable
@@ -1714,11 +1726,12 @@ private fun AppChecklist(l: Launcher, p: Popup.Checklist) {
     var query by remember { mutableStateOf("") }
     val ids = p.ids(l.layout)
     // Ticked first, in the order the list opened with, so a tap does not move the row away.
-    val ticked = remember { ids.mapNotNull(l.find).toSet() }
+    val ticked = remember { ids.mapNotNull(l.findEntry).map { it.id }.toSet() }
+    val entries = if (p.nativeOnly) l.drawerEntries.filter { it.target is Target.App } else l.drawerEntries
     PickerDialog(l, p.title, query, { query = it }) {
-        items(search(l.apps.sortedByDescending { it in ticked }, query) { it.label }, key = { it.id }) { app ->
-            PickerRow(app.icon, app.label, checked = ids.any { l.find(it) == app }) {
-                l.update { p.put(it, p.ids(it).toggled(app, app.id, l.find)) }
+        items(search(entries.sortedByDescending { it.id in ticked }, query) { it.label }, key = { it.id }) { entry ->
+            PickerRow(entry.icon, entry.label, checked = ids.any { l.findEntry(it) == entry }) {
+                l.update { p.put(it, p.ids(it).toggled(entry, entry.id, l.findEntry)) }
             }
         }
     }
@@ -2072,8 +2085,8 @@ private fun DrawerPreview(l: Launcher, layout: Layout) = Column(Modifier.fillMax
     LazyRow(Modifier.padding(top = TAB_GAP), contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(layout.tabs) { i, tab -> Bubble(tab.name, i == 0, Modifier) }
     }
-    val apps = layout.tabs.firstOrNull()?.let { tabApps(it, layout.tabs, l.tabbed, l.find, layout.hidden) } ?: l.tabbed
-    PreviewIcons(l, apps.take(layout.drawerColumns).map { Target.App(it.id) }, layout.drawerColumns, DRAWER_ICON, labels = true, Modifier.height(128.dp).padding(horizontal = 8.dp))
+    val apps = layout.tabs.firstOrNull()?.let { tabApps(it, layout.tabs, l.tabbed, l.findEntry, layout.hidden) } ?: l.tabbed
+    PreviewIcons(l, apps.take(layout.drawerColumns).map { it.target }, layout.drawerColumns, DRAWER_ICON, labels = true, Modifier.height(128.dp).padding(horizontal = 8.dp))
 }
 
 /**
@@ -2118,6 +2131,7 @@ private fun GuideSettings(welcome: Boolean, open: (Section) -> Unit) {
         ),
         R.string.settings_drawer to listOf(
             Tip(R.string.guide_drawer, R.string.guide_drawer_how),
+            Tip(R.string.guide_web_apps, R.string.guide_web_apps_how),
             Tip(R.string.drawer_grid, R.string.guide_drawer_grid_how, Section.DRAWER),
             Tip(R.string.settings_tabs, R.string.guide_tabs_how, Section.DRAWER),
             Tip(R.string.guide_tab_apps, R.string.guide_tab_apps_how, Section.DRAWER),
@@ -2348,7 +2362,7 @@ private fun DrawerSettings(l: Launcher, layout: Layout, onUnused: () -> Unit) {
     layout.tabs.forEachIndexed { i, tab ->
         // Installed apps only, each once: an app under two of its ids, or uninstalled, is not shown twice or at all.
         val summary = if (tab.apps == null) stringResource(R.string.drawer_tab_all_apps)
-        else tab.apps.mapNotNull(l.find).toSet().size.let { n -> pluralStringResource(R.plurals.count_apps, n, n) } +
+        else tab.apps.mapNotNull(l.findEntry).toSet().size.let { n -> pluralStringResource(R.plurals.count_apps, n, n) } +
             if (tab.hideApps) " · " + stringResource(R.string.drawer_tab_hides_apps) else ""
         fun move(to: Int) = l.update { it.copy(tabs = it.tabs.shifted(i, to)) }
         SettingRow(tab.name, summary, { l.popup = Popup.EditTab(i) }) {
@@ -2358,17 +2372,17 @@ private fun DrawerSettings(l: Launcher, layout: Layout, onUnused: () -> Unit) {
     }
     AddRow(stringResource(R.string.drawer_add_tab)) { l.popup = newTab(l) }
     Header(stringResource(R.string.settings_apps))
-    val hidden = layout.hidden.mapNotNull(l.find).toSet().size
+    val hidden = layout.hidden.mapNotNull(l.findEntry).toSet().size
     SettingRow(
         stringResource(R.string.drawer_hidden_apps),
         if (hidden == 0) stringResource(R.string.drawer_hidden_apps_none) else pluralStringResource(R.plurals.count_apps, hidden, hidden),
-        { l.popup = Popup.Checklist(l.getString(R.string.drawer_hidden_apps), { it.hidden }, { layout, ids -> layout.copy(hidden = ids) }) },
+        { l.popup = Popup.Checklist(l.getString(R.string.drawer_hidden_apps), { it.hidden }) { layout, ids -> layout.copy(hidden = ids) } },
     )
     val poisons = layout.poisons.mapNotNull(l.find).toSet().size
     SettingRow(
         stringResource(R.string.poisons),
         if (poisons == 0) stringResource(R.string.poison_summary_none) else pluralStringResource(R.plurals.count_apps, poisons, poisons),
-        { l.popup = Popup.Checklist(l.getString(R.string.poisons), { it.poisons }, { layout, ids -> layout.copy(poisons = ids) }) },
+        { l.popup = Popup.Checklist(l.getString(R.string.poisons), { it.poisons }, nativeOnly = true) { layout, ids -> layout.copy(poisons = ids) } },
     )
     SettingRow(
         stringResource(R.string.poison_instead),

@@ -286,7 +286,7 @@
 
     <!-- A shortcut another app asks to pin -->
     <string name="pin_text">«%1$s», de %2$s</string>
-    <string name="pin_no_room">No hay lugar en el escritorio</string>
+
     <string name="pin_add_failed">No se pudo agregar «%1$s»</string>
     <string name="pin_added">Agregado al escritorio</string>
 
@@ -314,7 +314,7 @@
     <string name="guide_tidy_how">Lista lo roto, lo repetido y las páginas vacías, cada uno con su Quitar; nada se quita solo</string>
     <string name="guide_paused_how">Las que pausa el modo Concentración o Bienestar digital quedan en gris; Ajustes → Escritorio puede ocultarlas</string>
     <string name="guide_pin">Atajos de otras apps</string>
-    <string name="guide_pin_how">Cuando una app, como el navegador, agrega un atajo al escritorio, Islauncher te pregunta antes</string>
+    <string name="guide_pin_how">Cuando una app, como el navegador, agrega un atajo al escritorio, Islauncher te pregunta antes. Si las páginas están llenas, agrega una página</string>
     <string name="guide_widget_add_how">Mantené presionado un lugar vacío → Agregar widget; buscalo por app o por nombre, con su vista previa y su tamaño</string>
     <string name="guide_resize_how">Mantené presionado un widget → Cambiar tamaño y arrastrá los puntos de sus bordes; tocá afuera para terminar</string>
     <string name="guide_reconfigure_how">Mantené presionado un widget → Volver a configurar, y después tocalo: se abre de nuevo su configuración, salvo que no tenga o sea opcional</string>
@@ -329,6 +329,8 @@
     <string name="guide_dock_pages_how">En Ajustes → Dock agregá, ordená y quitá páginas, y elegí los íconos por página; deslizá el dock de costado para pasar de una a otra, y con Desplazamiento infinito de la última se pasa a la primera. La casita marca la principal: el dock arranca ahí y vuelve a ella después de abrir una app</string>
     <string name="guide_drawer">Abrir y cerrar</string>
     <string name="guide_drawer_how">Deslizá hacia arriba en el escritorio; para cerrarlo, deslizá hacia abajo desde el principio de la lista</string>
+    <string name="guide_web_apps">Apps web instaladas</string>
+    <string name="guide_web_apps_how">Los WebAPK instalados y los atajos web del navegador que aceptaste aparecen en el cajón y la búsqueda, y se agregan al inicio una sola vez. Quitar un ícono del inicio lo conserva en el cajón. Los atajos anclados por otro launcher pueden necesitar que los agregues de nuevo desde el navegador</string>
     <string name="guide_drawer_grid_how">Sus columnas, y cuántas filas entran en una pantalla, en Ajustes → Cajón de apps</string>
     <string name="guide_tabs_how">Deslizá de costado para pasar de una a otra; mantené presionada una para renombrarla, agregar otra o, si es de apps elegidas, eliminarla</string>
     <string name="guide_tab_apps">Las apps de una pestaña</string>
