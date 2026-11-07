@@ -89,4 +89,27 @@ Both supported web-app representations appear in the drawer and are placed on Ho
 
 ## Result
 
-To be completed after implementation and verification.
+Implemented in `de6facf`, `010b80f` and `bd9e866` without changing existing native app ids, the persisted layout schema,
+Android permissions or pin confirmation. Native activity discovery remains separate from optional metadata
+classification and browser shortcut discovery. Web shortcut drawer items, keyboard actions and drag operations
+retain the actual shortcut target. Existing layout positions and deliberate Home removal are preserved.
+
+Validation of `bd9e866`: `testDebugUnitTest lintDebug assembleDebug` completed successfully. JUnit reports contain
+72 tests, zero failures, zero errors and zero skipped tests. Lint reports zero errors and ten warnings. The debug
+APK was assembled, its permission list was inspected with ARM64 aapt2, and it does not request INTERNET. English
+and Spanish translatable resource keys match. Regression evidence includes failed tests before implementing
+identity/placement, dock-target acceptance, checked query failures, per-package metadata isolation and atomic PNG
+replacement.
+
+Independent Claude Opus review found five concrete defects: uncaught checked metadata errors, native-only dock
+drops, truncating PNG writes, a native-only tab counter and a misleading duplicate-pin message. The fixes include
+regression tests for platform-query failure retention, metadata cache transitions, native/shortcut dock placement
+and atomic icon replacement. The final read-only review of `bd9e866` closed all five findings and found no new
+demonstrable code defects. It explicitly did not approve release without native device checks.
+
+Unverified surfaces: real browser-to-launcher pin requests, installed WebAPK discovery, work-profile behavior,
+actual tap/drag interactions, persistence after Android process death and both native UI themes. No native device
+or emulator was exercised; a desktop browser is not a substitute for this Kotlin/Compose Android app. No release
+APK was signed with the distribution key, no phone was modified and no changes were pushed or published. Orca
+registration is incomplete because its headless runtime cannot start with the container's sandbox constraints;
+the sandbox-preserving path leaves it stopped rather than disabling isolation.
