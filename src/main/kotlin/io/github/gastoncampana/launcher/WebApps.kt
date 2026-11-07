@@ -2,6 +2,22 @@ package io.github.gastoncampana.launcher
 
 import java.net.URI
 
+fun <T> readOrKeep(previous: T, read: () -> T, onFailure: (Exception) -> Unit): T = try {
+    read()
+} catch (failure: Exception) {
+    onFailure(failure)
+    previous
+}
+
+fun Layout.withDockedIcon(from: Int?, item: Item.Icon, page: Int, slot: Int): Layout {
+    if (page !in dock.indices || slot !in 0 until dockSize || slot !in dock[page].indices || dock[page][slot].tap != null) return this
+    if (from != null && item !in desktop.getOrNull(from).orEmpty()) return this
+    return copy(
+        dock = dock.replaced(page) { it.replaced(slot) { icon -> icon.copy(tap = item.target) } },
+        desktop = if (from == null) desktop else desktop.replaced(from) { it - item },
+    )
+}
+
 fun isPackagedWebApp(startUrl: String?, manifestUrl: String?): Boolean {
     fun isWebUrl(value: String?): Boolean = try {
         value?.let { URI(it) }?.let { it.scheme in setOf("https", "http") && !it.host.isNullOrBlank() } == true

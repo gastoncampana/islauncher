@@ -13,6 +13,46 @@ class WebAppsTest {
     private val packaged = Target.App("web.apk/web.Main#0")
 
     @Test
+    fun failedDiscoveryKeepsTheLastListForCheckedAndRuntimeExceptions() {
+        val previous = listOf(board)
+        for (failure in listOf(Exception("Package disappeared"), IllegalStateException("Profile locked"))) {
+            val observed = mutableListOf<Exception>()
+            val result = readOrKeep(previous, { throw failure }, observed::add)
+            assertEquals(previous, result)
+            assertEquals(listOf(failure), observed)
+        }
+    }
+
+    @Test
+    fun aSuccessfulEmptyQueryClearsTheDrawerList() {
+        val failures = mutableListOf<Exception>()
+        assertEquals(emptyList<Target>(), readOrKeep(listOf(board), { emptyList<Target.Shortcut>() }, failures::add))
+        assertTrue(failures.isEmpty())
+    }
+
+    @Test
+    fun aWebShortcutDraggedFromTheDrawerDocksItsActualTarget() {
+        val item = Item.Icon(board, "Board", Cell(0f, 0f))
+        val before = Layout(dock = listOf(listOf(DockIcon(up = music)) + List(4) { DockIcon() }))
+        val after = before.withDockedIcon(null, item, 0, 0)
+        assertEquals(DockIcon(tap = board, up = music), after.dock[0][0])
+        assertEquals(before.desktop, after.desktop)
+    }
+
+    @Test
+    fun dockingFromHomeRemovesOnlyTheDraggedItemAndNeverOverwritesATap() {
+        val item = Item.Icon(packaged, "Packaged", Cell(0f, 0f))
+        val widget = Item.Widget("clock/Provider", 42, Cell(1f, 0f))
+        val before = Layout(desktop = listOf(listOf(item, widget)))
+        val after = before.withDockedIcon(0, item, 0, 0)
+        assertEquals(listOf(widget), after.desktop[0])
+        assertEquals(packaged, after.dock[0][0].tap)
+        assertEquals(after, after.withDockedIcon(null, Item.Icon(board, "Board", Cell(0f, 0f)), 0, 0))
+        assertEquals(before, before.withDockedIcon(0, item, 4, 0))
+        assertEquals(before, before.withDockedIcon(0, item, 0, before.dockSize))
+    }
+
+    @Test
     fun packagedWebAppsNeedBothWebMetadataUrls() {
         assertTrue(isPackagedWebApp("https://board.example.test/", "https://board.example.test/manifest.json"))
         assertTrue(isPackagedWebApp("http://board.example.test/", "http://board.example.test/manifest.json"))

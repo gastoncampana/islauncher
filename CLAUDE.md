@@ -73,7 +73,10 @@ picker must see non-exported widget receivers, which a `<queries>` block misses)
   idempotent across desktop/dock targets and adds a page when needed. The drawer, search, tab/hidden checklists
   and settings preview all use `drawerEntries`/`findEntry`; native-app pickers and poison settings stay native-only.
   Reconciliation runs on resume and package/shortcut callbacks, serialized by `reloadLock`. A failed query keeps
-  the last successful list; no shortcut-host permission produces an empty shortcut list.
+  the last successful list through `readOrKeep`, including checked package-disappearance exceptions;
+  no shortcut-host permission produces an empty shortcut list. `withDockedIcon` accepts native and shortcut
+  targets, retains existing swipes and refuses occupied slots. `ShortcutIcons.kt` atomically replaces cached PNGs
+  so a simultaneous desktop read cannot observe a partial encoding; failed encoding preserves the old file.
 - `Ui.kt`: Compose UI. Desktop pager with icons and widgets (long press opens the item menu; dragging moves the
   item, drawn from the layer it keeps recording, and holding it at a side flips the page), a wrap-around dock pager, Nova-style
   search pill. A drag's `VelocityTracker` follows the pointer in root coordinates (a page flip adds no speed) with

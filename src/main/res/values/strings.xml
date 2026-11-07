@@ -278,6 +278,7 @@
 
     <string name="pin_add_failed">Couldn\'t add “%1$s”</string>
     <string name="pin_added">Added to home screen</string>
+    <string name="pin_already_added">Shortcut already on the home screen or dock</string>
 
     <!-- Settings → Guide: what the app does, part by part. Each entry is a name and one line on how to do it. -->
     <string name="guide">Guide</string>

@@ -173,8 +173,10 @@ fun Context.addShortcut(info: ShortcutInfo, pin: () -> Boolean) {
     if (!pinned) return toast(getString(R.string.pin_add_failed, label))
     val target = Target.Shortcut(info.`package`, info.id, label)
     keepShortcutIcon(info)
-    Layouts.update { it.withPinnedIcon(target, label) }
-    toast(getString(R.string.pin_added))
+    val next = Layouts.current.withPinnedIcon(target, label)
+    val added = next != Layouts.current
+    if (added) Layouts.update { next }
+    toast(getString(if (added) R.string.pin_added else R.string.pin_already_added))
 }
 
 private fun Context.keepShortcutIcon(info: ShortcutInfo): ImageBitmap? {
@@ -183,7 +185,9 @@ private fun Context.keepShortcutIcon(info: ShortcutInfo): ImageBitmap? {
         val icon = getSystemService(LauncherApps::class.java).getShortcutIconDrawable(info, resources.displayMetrics.densityDpi)
         val size = (56 * resources.displayMetrics.density).toInt()
         val bitmap = icon?.toBitmap(size, size) ?: return null
-        shortcutIconFile(target).outputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+        writeShortcutIcon(shortcutIconFile(target)) { out ->
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) throw IOException("Shortcut icon encoding failed")
+        }
         return bitmap.asImageBitmap()
     } catch (e: Exception) { // the app's icon stands in
         Log.w(TAG, "Cannot save the icon of ${info.label}", e)
@@ -364,24 +368,18 @@ class Launcher : ComponentActivity() {
     private fun reload(vararg changed: String) {
         lifecycleScope.launch {
             reloadLock.withLock {
-                val list = withContext(loader) {
-                    try {
-                        loadApps(changed.toSet())
-                    } catch (e: RuntimeException) { // a profile or package vanished mid-read; keep the current list
-                        Log.w(TAG, "App list reload failed", e)
-                        null
+                val previousApps = apps
+                apps = withContext(loader) {
+                    readOrKeep(previousApps, { loadApps(changed.toSet()) }) {
+                        Log.w(TAG, "App list reload failed", it)
                     }
                 }
-                if (list != null) apps = list
-                val shortcuts = withContext(loader) {
-                    try {
-                        loadWebShortcuts()
-                    } catch (e: RuntimeException) {
-                        Log.w(TAG, "Web shortcut reload failed", e)
-                        null
+                val previousShortcuts = webShortcuts
+                webShortcuts = withContext(loader) {
+                    readOrKeep(previousShortcuts, ::loadWebShortcuts) {
+                        Log.w(TAG, "Web shortcut reload failed", it)
                     }
                 }
-                if (shortcuts != null) webShortcuts = shortcuts
                 val discovered = drawerEntries.filter { it.target is Target.Shortcut || it.app?.webApp == true }
                 Layouts.discoverWebApps(discovered)
             }

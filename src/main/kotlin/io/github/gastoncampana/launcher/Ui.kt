@@ -469,8 +469,8 @@ private class Mover(private val l: Launcher, private val haptic: (HapticFeedback
         val d = drag ?: return
         drag = null
         if (d.page == null) l.hideDrawer()
-        val app = (d.item as? Item.Icon)?.target as? Target.App
-        if (app != null && d.pointer in dock) return dropOnDock(d, app) // however fast: the dock is where it was aimed
+        val target = (d.item as? Item.Icon)?.target
+        if (target != null && d.pointer in dock) return dropOnDock(d, target) // however fast: the dock is where it was aimed
         val velocity = d.velocity.calculateVelocity().let { Offset(it.x, it.y) }
         if (velocity.getDistance() > THROW_DP_PER_S * l.resources.displayMetrics.density) {
             // Thrown: a desktop item goes, one from the drawer is only cancelled (nothing added).
@@ -490,29 +490,26 @@ private class Mover(private val l: Launcher, private val haptic: (HapticFeedback
         l.update { it.moved(d.page, d.item, page, want) }
         if (l.layout === before) return refuse(l.getString(R.string.desktop_no_room_page))
         haptic(HapticFeedbackType.Confirm)
-        placedPaused(app)
+        placedPaused(target)
     }
 
     /** A paused app Ajustes hides is placed all the same, out of sight until it resumes: say so. */
-    private fun placedPaused(app: Target.App?) {
-        if (l.hides(app)) l.toast(l.getString(R.string.paused_placed, l.labelOf(app)))
+    private fun placedPaused(target: Target?) {
+        if (l.hides(target)) l.toast(l.getString(R.string.paused_placed, l.labelOf(target)))
     }
 
     // Only an empty slot: replacing a dock icon by accident would lose its swipes' setup with no undo.
-    private fun dropOnDock(d: Drag, app: Target.App) {
+    private fun dropOnDock(d: Drag, target: Target) {
         val page = dockPage()
         val size = l.layout.dockSize
         val slot = ((d.pointer.x - dock.left) / dock.width * size).toInt().coerceIn(0, size - 1)
         val tap = l.layout.dock[page][slot].tap
         if (tap != null) return refuse(if (l.hides(tap)) l.getString(R.string.dock_slot_paused, l.labelOf(tap)) else l.getString(R.string.dock_slot_taken))
-        l.update { layout ->
-            layout.copy(
-                dock = layout.dock.replaced(page) { it.replaced(slot) { icon -> icon.copy(tap = app) } },
-                desktop = if (d.page == null) layout.desktop else layout.desktop.replaced(d.page) { it - d.item },
-            )
-        }
+        val before = l.layout
+        l.update { it.withDockedIcon(d.page, d.item as Item.Icon, page, slot) }
+        if (l.layout === before) return
         haptic(HapticFeedbackType.Confirm)
-        placedPaused(app)
+        placedPaused(target)
     }
 
     private fun refuse(why: String) {
@@ -2437,7 +2434,7 @@ private fun TabDialog(l: Launcher, i: Int, tab: Tab) {
             Column {
                 GatedHaptics(l) { OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), singleLine = true) }
                 if (tab.apps != null) {
-                    val count = tab.apps.mapNotNull(l.find).toSet().size
+                    val count = tab.apps.mapNotNull(l.findEntry).toSet().size
                     Row(
                         Modifier
                             .padding(top = 8.dp)

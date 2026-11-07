@@ -42,10 +42,12 @@ Verified against `83ac857d36636ea13bbb605f0cf2bab28ff8a3ac` on `main`.
 
 - `src/main/kotlin/io/github/gastoncampana/launcher/Model.kt`
 - `src/main/kotlin/io/github/gastoncampana/launcher/WebApps.kt`
+- `src/main/kotlin/io/github/gastoncampana/launcher/ShortcutIcons.kt`
 - `src/main/kotlin/io/github/gastoncampana/launcher/Launcher.kt`
 - `src/main/kotlin/io/github/gastoncampana/launcher/Ui.kt`
 - `src/test/kotlin/io/github/gastoncampana/launcher/ModelTest.kt`
 - `src/test/kotlin/io/github/gastoncampana/launcher/WebAppsTest.kt`
+- `src/test/kotlin/io/github/gastoncampana/launcher/ShortcutIconsTest.kt`
 - `src/main/res/values/strings.xml`
 - `src/main/res/values-es/strings.xml`
 - `README.md`
