@@ -407,9 +407,11 @@ class Launcher : ComponentActivity() {
                 val icon = icons.getOrPut(id) { info.getBadgedIcon(0).toBitmap(size, size).asImageBitmap() }
                 // A binder call, read as this user: a work profile's copy would get the main profile's date, or none.
                 val installed = if (info.user != Process.myUserHandle()) 0 else installTimes.getOrPut(info.componentName.packageName) { info.firstInstallTime }
-                val webApp = webPackages.getOrPut(packageKey(id)) {
+                val webApp = cachedWebApp(webPackages, packageKey(id), {
                     val metadata = launcherApps.getApplicationInfo(info.componentName.packageName, PackageManager.GET_META_DATA, info.user).metaData
                     isPackagedWebApp(metadata?.getString("org.chromium.webapk.shell_apk.startUrl"), metadata?.getString("org.chromium.webapk.shell_apk.webManifestUrl"))
+                }) {
+                    Log.w(TAG, "Web app metadata unavailable for ${info.componentName.packageName}", it)
                 }
                 App(id, info.label.toString(), icon, info, info.applicationInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0, installed.takeIf { it > 0 }?.div(DAY_MS), webApp)
             }

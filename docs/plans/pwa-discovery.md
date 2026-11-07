@@ -66,6 +66,17 @@ Verified against `83ac857d36636ea13bbb605f0cf2bab28ff8a3ac` on `main`.
 
 ## Risks and mitigations
 
+### Classification state machine
+
+Native activity identity is the component plus user serial. Optional web classification is keyed by package plus
+user serial and has three states: absent, verified web app, verified native app. A successful metadata query moves
+absent to a cached boolean. A failed metadata query stays absent and leaves the native entry visible; it must not
+abort the full activity list. A package callback invalidates the cached classification for that package. Full
+activity-list or shortcut-query failures retain their respective last verified lists. `reloadLock` serializes
+reloads; layout reconciliation and pin acceptance publish on the main thread.
+
+### Other risks
+
 - Browser and Android installation modes differ. Detect from documented platform/browser evidence and do not promise inaccessible historical shortcuts.
 - Shortcut identity can collide with app aliases. Use a separate identity namespace, retaining existing native app ids and package matching.
 - A refresh can race pin acceptance or fail while a profile is locked. Serialize reconciliation, preserve the last verified state on read failure and keep acceptance idempotent.

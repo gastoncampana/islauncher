@@ -13,6 +13,33 @@ class WebAppsTest {
     private val packaged = Target.App("web.apk/web.Main#0")
 
     @Test
+    fun missingWebMetadataDoesNotDiscardUnrelatedNativeAppsOrCacheTheFailure() {
+        val cache = mutableMapOf<String, Boolean>()
+        val failures = mutableListOf<Exception>()
+        val failure = Exception("Work profile metadata unavailable")
+        val native = listOf("personal#0", "work#10")
+        val classified = native.map { id ->
+            id to cachedWebApp(cache, id, { if (id == "work#10") throw failure else true }, failures::add)
+        }
+        assertEquals(listOf("personal#0" to true, "work#10" to false), classified)
+        assertEquals(mapOf("personal#0" to true), cache)
+        assertEquals(listOf(failure), failures)
+        assertTrue(cachedWebApp(cache, "work#10", { true }, failures::add))
+        assertEquals(true, cache["work#10"])
+    }
+
+    @Test
+    fun verifiedNegativeWebMetadataIsCachedButRuntimeErrorsAreNot() {
+        val cache = mutableMapOf<String, Boolean>()
+        val failures = mutableListOf<Exception>()
+        assertFalse(cachedWebApp(cache, "native#0", { false }, failures::add))
+        assertFalse(cachedWebApp(cache, "native#0", { throw AssertionError("Verified cache entry must be reused") }, failures::add))
+        assertFalse(cachedWebApp(cache, "locked#0", { throw IllegalStateException("User locked") }, failures::add))
+        assertFalse(cache.containsKey("locked#0"))
+        assertEquals(1, failures.size)
+    }
+
+    @Test
     fun failedDiscoveryKeepsTheLastListForCheckedAndRuntimeExceptions() {
         val previous = listOf(board)
         for (failure in listOf(Exception("Package disappeared"), IllegalStateException("Profile locked"))) {

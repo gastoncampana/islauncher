@@ -77,6 +77,8 @@ picker must see non-exported widget receivers, which a `<queries>` block misses)
   no shortcut-host permission produces an empty shortcut list. `withDockedIcon` accepts native and shortcut
   targets, retains existing swipes and refuses occupied slots. `ShortcutIcons.kt` atomically replaces cached PNGs
   so a simultaneous desktop read cannot observe a partial encoding; failed encoding preserves the old file.
+  Optional metadata classification is isolated per package/profile by `cachedWebApp`: successful positives and
+  negatives are cached, but a lookup failure leaves the cache absent, retains the native entry and retries later.
 - `Ui.kt`: Compose UI. Desktop pager with icons and widgets (long press opens the item menu; dragging moves the
   item, drawn from the layer it keeps recording, and holding it at a side flips the page), a wrap-around dock pager, Nova-style
   search pill. A drag's `VelocityTracker` follows the pointer in root coordinates (a page flip adds no speed) with

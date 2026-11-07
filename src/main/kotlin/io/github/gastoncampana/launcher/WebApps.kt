@@ -2,6 +2,12 @@ package io.github.gastoncampana.launcher
 
 import java.net.URI
 
+fun cachedWebApp(cache: MutableMap<String, Boolean>, id: String, read: () -> Boolean, onFailure: (Exception) -> Unit): Boolean {
+    cache[id]?.let { return it }
+    // Optional classification must not hide native apps or turn a locked profile into a cached negative.
+    return readOrKeep<Boolean?>(null, { read().also { cache[id] = it } }, onFailure) ?: false
+}
+
 fun <T> readOrKeep(previous: T, read: () -> T, onFailure: (Exception) -> Unit): T = try {
     read()
 } catch (failure: Exception) {
