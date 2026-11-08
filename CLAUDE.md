@@ -21,13 +21,17 @@ and a notification's package and key, and log or keep none of it beyond the bloc
   Home asks which launcher to use). The script stops the app first and warns if the choice was lost anyway.
 - Unit tests: `./gradlew testDebugUnitTest`
 - Build a GitHub release APK: `scripts/release.sh` (tests, signature and no-INTERNET checks, SHA-256 for the notes).
+  From any machine instead: push a `vX.Y.Z` tag that matches `versionName`. `.github/workflows/release.yml` waits for
+  the owner's approval (the `release` environment, which only `v*` tags can use and which holds the key and password as
+  base64 secrets), runs `scripts/release.sh` and drafts the release; the owner writes its notes and publishes it.
+  Run by hand on a `v*` tag, it is a dry run: everything but the release.
 - Optional reinforced block setup on the USB-connected phone: `scripts/blocks-setup.sh` (secure settings permission, device admin,
   notification access, accessibility service; no account removed, unlike a device owner).
 - Build machine: JDK 21 (`JAVA_HOME`) and the Android SDK with platform 37.0, wherever `local.properties` says.
 - Make it the default: Ajustes → Apps → Apps predeterminadas → App de inicio.
 
 Release builds are signed with the key in `~/.config/islauncher/` (`release.p12`, `password`), which never enters the
-repo; losing it means users must uninstall to update, which wipes their layout. Without it they fall back to this
+repo (the release workflow writes it there from the environment's secrets, and deletes it after); losing it means users must uninstall to update, which wipes their layout. Without it they fall back to this
 machine's debug key, so anyone can build from source, and `scripts/release.sh` refuses to ship that build.
 
 A restored backup or Nova import goes through `restored`: past `MAX_ITEMS`, `MAX_TABS` or `MAX_TEXT` the whole file is
