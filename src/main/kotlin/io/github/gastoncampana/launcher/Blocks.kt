@@ -4,7 +4,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.IDN
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 
@@ -86,6 +88,13 @@ fun nextChange(rules: List<Rule>, t: LocalDateTime): LocalDateTime? {
     val next = marks.firstOrNull { it > m } ?: (marks.first() + WEEK_MINUTES)
     return t.truncatedTo(ChronoUnit.MINUTES).plusMinutes((next - m).toLong())
 }
+
+/**
+ * The time to wait from [from] to [to], times on the clocks of [zone]: across a clock change an hour more or less than
+ * they read, which a timer on the elapsed clock (`postDelayed`, a snooze) needs.
+ */
+fun millisBetween(from: LocalDateTime, to: LocalDateTime, zone: ZoneId = ZoneId.systemDefault()): Long =
+    Duration.between(from.atZone(zone), to.atZone(zone)).toMillis()
 
 /** The longest run of minutes [c] leaves free, a run across Sunday night into Monday counted whole. */
 fun freeRun(c: BooleanArray): Int {

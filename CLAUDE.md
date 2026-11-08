@@ -23,7 +23,7 @@ and a notification's package and key, and log or keep none of it beyond the bloc
 - Build a GitHub release APK: `scripts/release.sh` (tests, signature and no-INTERNET checks, SHA-256 for the notes).
 - Optional reinforced block setup on the USB-connected phone: `scripts/blocks-setup.sh` (secure settings permission, device admin,
   notification access, accessibility service; no account removed, unlike a device owner).
-- Build machine: JDK 21 (`JAVA_HOME`) and the SDK in `~/Android/Sdk` (`local.properties`), platform 37.0.
+- Build machine: JDK 21 (`JAVA_HOME`) and the Android SDK with platform 37.0, wherever `local.properties` says.
 - Make it the default: Ajustes → Apps → Apps predeterminadas → App de inicio.
 
 Release builds are signed with the key in `~/.config/islauncher/` (`release.p12`, `password`), which never enters the
@@ -68,7 +68,8 @@ the time automatic during a block).
   Unit-tested in `src/test`.
 - `Blocks.kt`: pure logic of blocks ("bloqueos"). A `Rule` has packages, sites (hosts, `site` normalises what is typed,
   IDN to ASCII) and weekly `Span`s (days a span starts on, start and end minutes; an end before the start runs into the
-  next day, midnight as an end is 1440). `activeAt`, `blockedUntil` (rules back to back count as one), `nextChange`,
+  next day, midnight as an end is 1440). `activeAt`, `blockedUntil` (rules back to back count as one), `nextChange` (timers wait for it with
+  `millisBetween`, which counts a clock change),
   `problemSaving` (something to block, valid spans, `FREE_MINUTES` free in a row each week, and while running only
   `tightened`), `canRemove`. `readAddress` turns a browser's `BarNode`s into an `Address` (Site, Own, Typing, Unknown):
   bar ids (url, omnibar, location_bar, address, domain) in the top quarter or bottom fifth, text and description both,

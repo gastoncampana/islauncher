@@ -13,6 +13,7 @@ import java.time.DayOfWeek.TUESDAY
 import java.time.DayOfWeek.WEDNESDAY
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 class BlocksTest {
     @Test
@@ -85,6 +86,17 @@ class BlocksTest {
         // Sunday night: the next one is Monday 7:00, across the week's end.
         assertEquals(at(7, 7), nextChange(rules, at(6, 23, 30)))
         assertNull(nextChange(emptyList(), at(0, 0)))
+    }
+
+    @Test
+    fun theWaitForAChangeCountsTheClockChange() {
+        val madrid = ZoneId.of("Europe/Madrid")
+        val minute = 60_000L
+        // Clocks go from 2:00 to 3:00: from 1:50 to 3:00 is 10 minutes, not 70.
+        assertEquals(10 * minute, millisBetween(LocalDateTime.of(2026, 3, 29, 1, 50), LocalDateTime.of(2026, 3, 29, 3, 0), madrid))
+        // From 3:00 back to 2:00: 2:00 to 3:00 runs twice, so 130 minutes.
+        assertEquals(130 * minute, millisBetween(LocalDateTime.of(2026, 10, 25, 1, 50), LocalDateTime.of(2026, 10, 25, 3, 0), madrid))
+        assertEquals(70 * minute, millisBetween(at(0, 1, 50), at(0, 3), madrid))
     }
 
     @Test

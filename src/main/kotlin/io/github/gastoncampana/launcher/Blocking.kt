@@ -43,7 +43,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -298,7 +297,7 @@ class BlockService : AccessibilityService() {
     private var lastBack: Pair<String, Long>? = null
     private var settingsPage: CharSequence? = null // the class of Ajustes' latest window
     private var browsers: Set<String>? = null
-    private var safe: Set<String>? = null // [unblockable], read again when packages change
+    private var safe: Set<String>? = null // [unblockable], read again for each app that comes to the front and when packages change
     private var guard: BlockGuard? = null
     private var notice: View? = null
 
@@ -360,11 +359,14 @@ class BlockService : AccessibilityService() {
         val rules = BlockStore.rules
         val now = BlockStore.now()
         // Look again when a block starts or ends: what is already open when one starts is caught then.
-        nextChange(rules, now)?.let { handler.postDelayed(atChange, Duration.between(now, it).toMillis().coerceAtLeast(1000)) }
+        nextChange(rules, now)?.let { handler.postDelayed(atChange, millisBetween(now, it).coerceAtLeast(1000)) }
         val runs = rules.filter { it.activeAt(now) }
         running = runs.isNotEmpty()
         if (!running) {
             front = null // so the app in front when one starts gets its moment from then
+            // What a browser showed is needed only during a block: none of it outlives one.
+            hosts = null
+            left = null
             return
         }
         applicationContext.guardBlocks() // the time settings, now that one runs
@@ -386,6 +388,7 @@ class BlockService : AccessibilityService() {
             enteredAt = t
             hosts = back?.second
             read = back?.third == true
+            safe = null // the default phone, SMS or home app may have changed: a role change sends no package broadcast
         }
         if (pkg == SETTINGS) return protectSettings(focused, root, rules, now)
         if (pkg in (safe ?: unblockable().also { safe = it })) return
@@ -561,7 +564,7 @@ class BlockListener : NotificationListenerService() {
     private fun recheck() {
         handler.removeCallbacks(recheck)
         val now = BlockStore.now()
-        nextChange(BlockStore.rules, now)?.let { handler.postDelayed(recheck, Duration.between(now, it).toMillis().coerceAtLeast(1000)) }
+        nextChange(BlockStore.rules, now)?.let { handler.postDelayed(recheck, millisBetween(now, it).coerceAtLeast(1000)) }
         try {
             activeNotifications?.forEach { snoozeIfBlocked(it, now) }
             sessions(getSystemService(MediaSessionManager::class.java).getActiveSessions(ComponentName(this, BlockListener::class.java)))
@@ -573,7 +576,7 @@ class BlockListener : NotificationListenerService() {
     private fun snoozeIfBlocked(sbn: StatusBarNotification, now: LocalDateTime) {
         if (sbn.packageName == packageName) return
         val until = BlockStore.appBlockedUntil(sbn.packageName, now) ?: return
-        snoozeNotification(sbn.key, Duration.between(now, until).toMillis().coerceAtLeast(1000))
+        snoozeNotification(sbn.key, millisBetween(now, until).coerceAtLeast(1000))
     }
 
     private fun sessions(controllers: List<MediaController>) {
