@@ -31,7 +31,8 @@ jobs:
       - name: Android SDK
         run: |
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$sdkmanager" --licenses > /dev/null
+          # Not "yes |": under pipefail, yes dies of a broken pipe once sdkmanager stops reading, failing the step.
+          "$sdkmanager" --licenses < <(yes) > /dev/null
           "$sdkmanager" "platforms;android-37.0" "build-tools;37.0.0" > /dev/null
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "$ANDROID_HOME/build-tools/37.0.0" >> "$GITHUB_PATH"
