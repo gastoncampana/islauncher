@@ -188,7 +188,8 @@ A launcher sees every app you have and every app you open, so this one is built 
     tab's apps from a list of all apps, which a new tab opens right after its name
 - Hidden apps are left out of every tab, but search still finds them.
 - Installed Chromium WebAPKs and browser web shortcuts accepted by Islauncher appear in the drawer and search.
-  They are added to Home once, without moving existing icons; a full desktop gets another page. Removing a Home
+  Those installed after this version first looks are added to Home once (the ones already installed then stay in
+  the drawer), without moving existing icons; a full desktop gets another page. Removing a Home
   icon does not remove the drawer entry or cause it to be added back on each refresh. Web shortcuts open their
   own destination, can be dragged to Home or the dock, and can be assigned to tabs or hidden independently.
   Their menus do not offer to uninstall the browser. Android does not expose another launcher's private pinned
@@ -423,6 +424,9 @@ without blocks.
   the app's menu or from the app itself.
 - **Pinned shortcuts do not survive a reinstall.** They belong to the install that pinned them, and backups do not
   carry their icons. After restoring, add them again from the app's menu or from the app itself.
+- **Web apps are told apart without their address.** A launcher cannot read where a shortcut leads, so a site
+  installed as an app and also pinned from the browser shows twice. A browser action you pinned with an app menu's +
+  can show among the web apps if the browser later stops offering it.
 - **Some widgets start as placeholders.** This happens after a Nova import, and after restoring a backup whose
   widgets no longer exist on the device. Tap each placeholder to bind it and run its setup.
 - **There are no folders.** A Nova import skips Nova's folders, its private-space tab and Nova's own actions, such as

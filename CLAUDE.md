@@ -103,7 +103,10 @@ the time automatic during a block).
   record is not in layout backups and survives missing query results or removal from Home. `withPinnedIcon` is
   idempotent across desktop/dock targets and adds a page when needed. The drawer, search, tab/hidden checklists
   and settings preview all use `drawerEntries`/`findEntry`; native-app pickers and poison settings stay native-only.
-  Reconciliation runs on resume and package/shortcut callbacks, serialized by `reloadLock`. A failed query keeps
+  Reconciliation runs on package/shortcut callbacks, and on resume only when `hasShortcutHostPermission` no longer
+  matches `shortcutHost` (made the home app, or no longer it), serialized by `reloadLock`. Discovery runs only as the
+  home app, and its first run (no `knownWebApps` yet) only records the web apps installed, so Home does not change.
+  `webIcons` keeps each web shortcut's icon until its `lastChangedTimestamp` changes. A failed query keeps
   the last successful list through `readOrKeep`, including checked package-disappearance exceptions;
   no shortcut-host permission produces an empty shortcut list. `withDockedIcon` accepts native and shortcut
   targets, retains existing swipes and refuses occupied slots. `ShortcutIcons.kt` atomically replaces cached PNGs
@@ -145,7 +148,8 @@ the time automatic during a block).
   read in `loadApps` off the main thread and only for the main profile, as `firstInstallTime` reads as this user).
   With `hideSuspended`, `Launcher.hides` keeps a paused app's desktop icons and dock taps from being drawn (the item
   stays saved, so its spot stays taken, though a long press there opens the desktop menu) and `Launcher.tabbed` leaves
-  it out of the tabs; search lists `apps`, and one dragged from there is placed with a toast saying it is paused.
+  it out of the tabs; search lists `drawerEntries` (apps and web shortcuts), and one dragged from there is placed with a
+  toast saying it is paused.
   Bloqueos is `Section.BLOCKS` (`BlocksSettings`): the three user-granted setup steps (read again on each `Launcher.resumes`), optional secure settings protection, the blocks,
   the browsers and whether their bar was read; `Popup.EditBlock` is the full-screen `BlockEditor`, whose trash on what
   a running block had only says so, and whose save checks `problemSaving` again as it saves.

@@ -125,7 +125,7 @@ object Layouts {
 
     fun discoverWebApps(entries: List<DrawerEntry>) {
         if (hasCorruptCopy) return
-        val known = prefs.getStringSet("knownWebApps", emptySet()).orEmpty()
+        val known = prefs.getStringSet("knownWebApps", null) // null: never ran, so what is installed is only recorded
         val byId = entries.associateBy { it.id }
         val next = current.withWebApps(entries.map { it.target }, known) { byId.getValue(it.entryId()).label }
         if (next.known == known && next.layout == current) return
@@ -206,6 +206,8 @@ class Launcher : ComponentActivity() {
     private val icons = HashMap<AppId, ImageBitmap>()
     private val installTimes = HashMap<String, Long>() // by package, main profile only; 0 when not found
     private val webPackages = HashMap<String, Boolean>()
+    private val webIcons = HashMap<String, Pair<Long, ImageBitmap>>() // by entryId: a web shortcut's icon, as of its last change
+    @Volatile private var shortcutHost = false // shortcuts could be read at the last reload: this is the home app
     private val loader = Dispatchers.Default.limitedParallelism(1)
     private val reloadLock = Mutex()
     private val widgetViews = HashMap<Int, AppWidgetHostView>()
@@ -314,7 +316,8 @@ class Launcher : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         updateToday() // the midnight broadcast is missed while the screen is off
-        reload() // PinActivity and a changed Home role can affect shortcuts while this activity is stopped.
+        // Becoming the home app, or no longer being it, changes which shortcuts can be read; other changes have callbacks.
+        if (launcherApps.hasShortcutHostPermission() != shortcutHost) reload()
         resumes++
     }
 
@@ -386,18 +389,26 @@ class Launcher : ComponentActivity() {
                     }
                 }
                 val discovered = drawerEntries.filter { it.target is Target.Shortcut || it.app?.webApp == true }
-                Layouts.discoverWebApps(discovered)
+                // Only as the home app: else no web shortcut can be read, and they would all count as new later.
+                if (shortcutHost) Layouts.discoverWebApps(discovered)
             }
         }
     }
 
     private fun loadWebShortcuts(): List<AppShortcut> {
-        if (!launcherApps.hasShortcutHostPermission()) return emptyList()
+        shortcutHost = launcherApps.hasShortcutHostPermission()
+        if (!shortcutHost) return emptyList()
         val query = LauncherApps.ShortcutQuery().setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
         val browsers = HashMap<String, Boolean>()
         return launcherApps.getShortcuts(query, Process.myUserHandle()).orEmpty().filter {
             isBrowserWebShortcut(browsers.getOrPut(it.`package`) { isBrowser(it.`package`) }, it.isPinned, it.isDynamic, it.isDeclaredInManifest, it.isEnabled)
-        }.map { AppShortcut(it, keepShortcutIcon(it)) }
+        }.map { s ->
+            // Read and saved again only once the shortcut changed, not on every reload.
+            val key = Target.Shortcut(s.`package`, s.id, s.label).entryId()
+            val icon = webIcons[key]?.takeIf { it.first == s.lastChangedTimestamp }?.second
+                ?: keepShortcutIcon(s)?.also { webIcons[key] = s.lastChangedTimestamp to it }
+            AppShortcut(s, icon)
+        }
     }
 
     private fun loadApps(changed: Set<String>): List<App> {

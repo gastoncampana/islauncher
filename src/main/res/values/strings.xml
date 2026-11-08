@@ -320,7 +320,7 @@
     <string name="guide_drawer">Open and close</string>
     <string name="guide_drawer_how">Swipe up on the home screen; to close it, pull down from the top of the list</string>
     <string name="guide_web_apps">Installed web apps</string>
-    <string name="guide_web_apps_how">Installed WebAPKs and accepted browser web shortcuts appear in the drawer and search, and are added to Home once. Removing a Home icon keeps it in the drawer. Shortcuts pinned by another launcher may need adding again from the browser</string>
+    <string name="guide_web_apps_how">Installed WebAPKs and accepted browser web shortcuts appear in the drawer and search; new ones are also added to Home, once. Removing a Home icon keeps it in the drawer. Shortcuts pinned by another launcher may need adding again from the browser</string>
     <string name="guide_drawer_grid_how">Its columns, and how many rows fit on one screen, in Settings → App drawer</string>
     <string name="guide_tabs_how">Swipe sideways from one to the next; long-press one to rename it, add a tab, or delete a tab of picked apps</string>
     <string name="guide_tab_apps">A tab\'s apps</string>

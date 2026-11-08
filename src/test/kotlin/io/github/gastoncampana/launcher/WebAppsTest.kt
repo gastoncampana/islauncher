@@ -144,6 +144,17 @@ class WebAppsTest {
     }
 
     @Test
+    fun theFirstDiscoveryOnlyRecordsTheWebAppsAlreadyInstalled() {
+        val first = Layout().withWebApps(listOf(board, packaged), null)
+        assertEquals(Layout(), first.layout)
+        assertEquals(2, first.known.size)
+        // One installed afterwards goes on Home, once.
+        val next = first.layout.withWebApps(listOf(board, packaged, music), first.known)
+        assertEquals(listOf(music), next.layout.desktop.flatten().filterIsInstance<Item.Icon>().map { it.target })
+        assertEquals(next, next.layout.withWebApps(listOf(board, packaged, music), next.known))
+    }
+
+    @Test
     fun discoveryIsIdempotentAndDoesNotUndoIntentionalRemoval() {
         val first = Layout().withWebApps(listOf(board, board, music), emptySet())
         assertEquals(2, first.layout.desktop.flatten().filterIsInstance<Item.Icon>().size)

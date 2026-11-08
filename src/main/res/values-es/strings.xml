@@ -331,7 +331,7 @@
     <string name="guide_drawer">Abrir y cerrar</string>
     <string name="guide_drawer_how">Deslizá hacia arriba en el escritorio; para cerrarlo, deslizá hacia abajo desde el principio de la lista</string>
     <string name="guide_web_apps">Apps web instaladas</string>
-    <string name="guide_web_apps_how">Los WebAPK instalados y los atajos web del navegador que aceptaste aparecen en el cajón y la búsqueda, y se agregan al inicio una sola vez. Quitar un ícono del inicio lo conserva en el cajón. Los atajos anclados por otro launcher pueden necesitar que los agregues de nuevo desde el navegador</string>
+    <string name="guide_web_apps_how">Los WebAPK instalados y los atajos web del navegador que aceptaste aparecen en el cajón y la búsqueda; los nuevos también se agregan al inicio, una sola vez. Quitar un ícono del inicio lo conserva en el cajón. Los atajos anclados por otro launcher pueden necesitar que los agregues de nuevo desde el navegador</string>
     <string name="guide_drawer_grid_how">Sus columnas, y cuántas filas entran en una pantalla, en Ajustes → Cajón de apps</string>
     <string name="guide_tabs_how">Deslizá de costado para pasar de una a otra; mantené presionada una para renombrarla, agregar otra o, si es de apps elegidas, eliminarla</string>
     <string name="guide_tab_apps">Las apps de una pestaña</string>

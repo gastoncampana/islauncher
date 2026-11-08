@@ -65,13 +65,17 @@ fun Layout.withPinnedIcon(target: Target, label: String): Layout {
     return placed(defaultPage, Item.Icon(target, label, Cell(0f, 0f)))
 }
 
-/** Known identities outlive desktop removal and temporary discovery gaps, so a refresh cannot undo a user's choice. */
-fun Layout.withWebApps(targets: List<Target>, known: Set<String>, label: (Target) -> String = {
+/**
+ * Known identities outlive desktop removal and temporary discovery gaps, so a refresh cannot undo a user's choice.
+ * A null [known] is the first discovery: the web apps already installed are only recorded, so Home does not change.
+ */
+fun Layout.withWebApps(targets: List<Target>, known: Set<String>?, label: (Target) -> String = {
     when (it) {
         is Target.App -> it.id
         is Target.Shortcut -> it.label
     }
 }): WebAppSync {
+    if (known == null) return WebAppSync(this, targets.mapTo(HashSet()) { it.installKey() })
     var next = this
     val discovered = known.toMutableSet()
     for (target in targets) {
