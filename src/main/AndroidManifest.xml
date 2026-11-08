@@ -48,11 +48,13 @@
             </intent-filter>
         </activity>
         <!-- "Add to home screen" from other apps. Exported because the system starts it; a forged
-             intent carries no valid PinItemRequest, so it does nothing. -->
+             intent carries no valid PinItemRequest, so it does nothing. Its own task: with the launcher's affinity
+             it joined the home task, which stays behind the app that asked, so the dialog was never seen. -->
         <activity
             android:name=".PinActivity"
             android:excludeFromRecents="true"
             android:exported="true"
+            android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />

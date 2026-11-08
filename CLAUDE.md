@@ -93,7 +93,8 @@ the time automatic during a block).
   `Layout`. `appgroups` group -1 is Nova's hidden apps. `NovaImport.kt` reads the `.novabackup` zip (nova.db + nova.xml).
 - `Launcher.kt`: the activity (app list, app shortcuts, widget host and bind/configure flow, backups, Nova import),
   `Layouts` (the shared layout state, also written by `PinActivity`), `PinActivity` (pinned shortcuts; asks the owner
-  first, since any foreground app can send a request) and `addShortcut`, which both it and the app menus' + use to
+  first, since any foreground app can send a request; `taskAffinity=""` keeps it out of the home task, which stays
+  behind the app that asks: there its dialog was never seen and a tap on it reached that app) and `addShortcut`, which both it and the app menus' + use to
   place a pinned shortcut and save its icon.
 - `WebApps.kt`: pure web app detection, drawer identity/lookup and non-destructive placement. WebAPKs are detected
   from Chromium start/manifest URL metadata. Launchers cannot read shortcut intents, so browser-published,
