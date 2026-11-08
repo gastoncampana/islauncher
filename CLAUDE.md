@@ -95,6 +95,24 @@ the time automatic during a block).
   `Layouts` (the shared layout state, also written by `PinActivity`), `PinActivity` (pinned shortcuts; asks the owner
   first, since any foreground app can send a request) and `addShortcut`, which both it and the app menus' + use to
   place a pinned shortcut and save its icon.
+- `WebApps.kt`: pure web app detection, drawer identity/lookup and non-destructive placement. WebAPKs are detected
+  from Chromium start/manifest URL metadata. Launchers cannot read shortcut intents, so browser-published,
+  enabled, pinned-only shortcuts (not dynamic or manifest actions) form the web shortcut entries. `DrawerEntry`
+  retains each entry's actual `Target`; app-only actions never use a web shortcut's browser as the selected app.
+  `Layouts.discoverWebApps` saves `knownWebApps` beside the layout in one preferences edit. This local discovery
+  record is not in layout backups and survives missing query results or removal from Home. `withPinnedIcon` is
+  idempotent across desktop/dock targets and adds a page when needed. The drawer, search, tab/hidden checklists
+  and settings preview all use `drawerEntries`/`findEntry`; native-app pickers and poison settings stay native-only.
+  Reconciliation runs on package/shortcut callbacks, and on resume only when `hasShortcutHostPermission` no longer
+  matches `shortcutHost` (made the home app, or no longer it), serialized by `reloadLock`. Discovery runs only as the
+  home app, and its first run (no `knownWebApps` yet) only records the web apps installed, so Home does not change.
+  `webIcons` keeps each web shortcut's icon until its `lastChangedTimestamp` changes. A failed query keeps
+  the last successful list through `readOrKeep`, including checked package-disappearance exceptions;
+  no shortcut-host permission produces an empty shortcut list. `withDockedIcon` accepts native and shortcut
+  targets, retains existing swipes and refuses occupied slots. `ShortcutIcons.kt` atomically replaces cached PNGs
+  so a simultaneous desktop read cannot observe a partial encoding; failed encoding preserves the old file.
+  Optional metadata classification is isolated per package/profile by `cachedWebApp`: successful positives and
+  negatives are cached, but a lookup failure leaves the cache absent, retains the native entry and retries later.
 - `Ui.kt`: Compose UI. Desktop pager with icons and widgets (long press opens the item menu; dragging moves the
   item, drawn from the layer it keeps recording, and holding it at a side flips the page), a wrap-around dock pager, Nova-style
   search pill. A drag's `VelocityTracker` follows the pointer in root coordinates (a page flip adds no speed) with
@@ -130,7 +148,8 @@ the time automatic during a block).
   read in `loadApps` off the main thread and only for the main profile, as `firstInstallTime` reads as this user).
   With `hideSuspended`, `Launcher.hides` keeps a paused app's desktop icons and dock taps from being drawn (the item
   stays saved, so its spot stays taken, though a long press there opens the desktop menu) and `Launcher.tabbed` leaves
-  it out of the tabs; search lists `apps`, and one dragged from there is placed with a toast saying it is paused.
+  it out of the tabs; search lists `drawerEntries` (apps and web shortcuts), and one dragged from there is placed with a
+  toast saying it is paused.
   Bloqueos is `Section.BLOCKS` (`BlocksSettings`): the three user-granted setup steps (read again on each `Launcher.resumes`), optional secure settings protection, the blocks,
   the browsers and whether their bar was read; `Popup.EditBlock` is the full-screen `BlockEditor`, whose trash on what
   a running block had only says so, and whose save checks `problemSaving` again as it saves.
@@ -178,6 +197,11 @@ checks the new one took (it skips an id the app has dropped).
 Ajustes → Copia de seguridad imports a Nova backup; imported widgets start unbound (`widgetId` 0) and bind when
 tapped. Pinned shortcuts belong to the home app that pinned them: shortcuts Nova pinned must be re-added from their
 app. Browsers bake their own badge into the web shortcuts they pin, so those get no second one.
+
+Installed WebAPKs are discovered without reinstallation. Browser web shortcuts already pinned to Islauncher
+also appear in the drawer; shortcuts private to another launcher still need adding again from the browser.
+Pin requests retain confirmation, and shortcut opens, including drawer search and dragging, use `open` so
+the publishing browser's poison pause still applies. Web shortcut menus cannot uninstall the browser.
 
 UI strings live in `src/main/res`: `values/strings.xml` is English (the default), `values-es/strings.xml` Spanish
 (rioplatense, voseo); new UI text needs both. Code comments are English.

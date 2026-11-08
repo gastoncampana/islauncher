@@ -97,7 +97,9 @@ A launcher sees every app you have and every app you open, so this one is built 
   animation options go with it.
 - **App shortcuts are read only to show them.** Each time an app's menu opens, it asks Android for that app's
   shortcuts, which can name recent chats, and keeps none of them. A shortcut you add to the home screen keeps its
-  label and icon, as any pinned shortcut does.
+  label and icon, as any pinned shortcut does. The drawer also reads installed browser web shortcuts pinned to
+  Islauncher. It keeps their icons and records which web app identities it has already placed on Home, so removing
+  an icon is respected on later refreshes. That discovery record stays on the device and is not part of a layout backup.
 - **Search learns from your opens, on the device only.** The launcher keeps a score per app of how often and how
   recently you opened it. The score loses a tenth of its weight each day: an app opened once drops out after about
   six weeks, one you opened every day a couple of months after you stop. Poison apps never gain a score: only the day
@@ -185,6 +187,13 @@ A launcher sees every app you have and every app you open, so this one is built 
   - long-press a tab to rename it, add a tab or remove a picked one; the settings also reorder them, and pick a
     tab's apps from a list of all apps, which a new tab opens right after its name
 - Hidden apps are left out of every tab, but search still finds them.
+- Installed Chromium WebAPKs and browser web shortcuts accepted by Islauncher appear in the drawer and search.
+  Those installed after this version first looks are added to Home once (the ones already installed then stay in
+  the drawer), without moving existing icons; a full desktop gets another page. Removing a Home
+  icon does not remove the drawer entry or cause it to be added back on each refresh. Web shortcuts open their
+  own destination, can be dragged to Home or the dock, and can be assigned to tabs or hidden independently.
+  Their menus do not offer to uninstall the browser. Android does not expose another launcher's private pinned
+  shortcuts: add those again from the browser if they are missing.
 - Accent-insensitive search that ranks prefix matches first. Among equally good matches, the apps you open more
   often and more recently come first, so `s` and Go opens the app you use, not a rarely used one. The keyboard's Go
   key opens the first result. Without a query the tabs stay alphabetical.
@@ -415,6 +424,9 @@ without blocks.
   the app's menu or from the app itself.
 - **Pinned shortcuts do not survive a reinstall.** They belong to the install that pinned them, and backups do not
   carry their icons. After restoring, add them again from the app's menu or from the app itself.
+- **Web apps are told apart without their address.** A launcher cannot read where a shortcut leads, so a site
+  installed as an app and also pinned from the browser shows twice. A browser action you pinned with an app menu's +
+  can show among the web apps if the browser later stops offering it.
 - **Some widgets start as placeholders.** This happens after a Nova import, and after restoring a backup whose
   widgets no longer exist on the device. Tap each placeholder to bind it and run its setup.
 - **There are no folders.** A Nova import skips Nova's folders, its private-space tab and Nova's own actions, such as

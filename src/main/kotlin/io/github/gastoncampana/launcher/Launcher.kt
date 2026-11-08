@@ -54,6 +54,8 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -74,7 +76,7 @@ private const val TRACKED_KEY = "tracked" // in prefs "usage": the day opens beg
 const val DAY_MS = 86_400_000.0
 
 /** [installed]: the day it was first installed (days since 1970), or null when unknown, as for a work profile's app. */
-class App(val id: AppId, val label: String, val icon: ImageBitmap, val info: LauncherActivityInfo, val suspended: Boolean, val installed: Double?) {
+class App(val id: AppId, val label: String, val icon: ImageBitmap, val info: LauncherActivityInfo, val suspended: Boolean, val installed: Double?, val webApp: Boolean = false) {
     /** Can be uninstalled: not a system app, updated or not. */
     val removable get() = info.applicationInfo.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
 }
@@ -83,6 +85,12 @@ class App(val id: AppId, val label: String, val icon: ImageBitmap, val info: Lau
 class AppShortcut(val info: ShortcutInfo, val icon: ImageBitmap?) {
     val target = Target.Shortcut(info.`package`, info.id, info.label)
 }
+
+data class DrawerEntry(val target: Target, val label: String, val icon: ImageBitmap?, val app: App?) {
+    val id get() = target.entryId()
+}
+
+private fun App.drawerEntry() = DrawerEntry(Target.App(id), label, icon, this)
 
 /** What a shortcut shows: its short label, else its long one. */
 val ShortcutInfo.label get() = (shortLabel ?: longLabel ?: "").toString()
@@ -115,6 +123,20 @@ object Layouts {
         prefs.edit { putString(LAYOUT_KEY, json) }
     }
 
+    fun discoverWebApps(entries: List<DrawerEntry>) {
+        if (hasCorruptCopy) return
+        val known = prefs.getStringSet("knownWebApps", null) // null: never ran, so what is installed is only recorded
+        val byId = entries.associateBy { it.id }
+        val next = current.withWebApps(entries.map { it.target }, known) { byId.getValue(it.entryId()).label }
+        if (next.known == known && next.layout == current) return
+        val json = next.layout.toJson()
+        prefs.edit {
+            putString(LAYOUT_KEY, json)
+            putStringSet("knownWebApps", next.known)
+        }
+        current = next.layout
+    }
+
     private fun load(): Layout {
         val json = prefs.getString(LAYOUT_KEY, null) ?: return Layout()
         return try {
@@ -141,9 +163,6 @@ fun Context.toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT)
  */
 fun Context.addShortcut(info: ShortcutInfo, pin: () -> Boolean) {
     Layouts.init(this)
-    val layout = Layouts.current
-    val page = (listOf(layout.defaultPage) + layout.desktop.indices).firstOrNull { layout.freeCell(it, 1f, 1f) != null }
-        ?: return toast(getString(R.string.pin_no_room))
     val label = info.label
     val pinned = try {
         pin()
@@ -153,15 +172,27 @@ fun Context.addShortcut(info: ShortcutInfo, pin: () -> Boolean) {
     }
     if (!pinned) return toast(getString(R.string.pin_add_failed, label))
     val target = Target.Shortcut(info.`package`, info.id, label)
+    keepShortcutIcon(info)
+    val next = Layouts.current.withPinnedIcon(target, label)
+    val added = next != Layouts.current
+    if (added) Layouts.update { next }
+    toast(getString(if (added) R.string.pin_added else R.string.pin_already_added))
+}
+
+private fun Context.keepShortcutIcon(info: ShortcutInfo): ImageBitmap? {
+    val target = Target.Shortcut(info.`package`, info.id, info.label)
     try {
         val icon = getSystemService(LauncherApps::class.java).getShortcutIconDrawable(info, resources.displayMetrics.densityDpi)
         val size = (56 * resources.displayMetrics.density).toInt()
-        icon?.let { shortcutIconFile(target).outputStream().use { out -> it.toBitmap(size, size).compress(Bitmap.CompressFormat.PNG, 100, out) } }
+        val bitmap = icon?.toBitmap(size, size) ?: return null
+        writeShortcutIcon(shortcutIconFile(target)) { out ->
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) throw IOException("Shortcut icon encoding failed")
+        }
+        return bitmap.asImageBitmap()
     } catch (e: Exception) { // the app's icon stands in
-        Log.w(TAG, "Cannot save the icon of $label", e)
+        Log.w(TAG, "Cannot save the icon of ${info.label}", e)
+        return null
     }
-    Layouts.update { l -> l.copy(desktop = l.desktop.replaced(page) { it + Item.Icon(target, label, l.freeCell(page, 1f, 1f)!!) }) }
-    toast(getString(R.string.pin_added))
 }
 
 class Launcher : ComponentActivity() {
@@ -174,12 +205,24 @@ class Launcher : ComponentActivity() {
     // Only touched from [loader], which runs one task at a time.
     private val icons = HashMap<AppId, ImageBitmap>()
     private val installTimes = HashMap<String, Long>() // by package, main profile only; 0 when not found
+    private val webPackages = HashMap<String, Boolean>()
+    private val webIcons = HashMap<String, Pair<Long, ImageBitmap>>() // by entryId: a web shortcut's icon, as of its last change
+    @Volatile private var shortcutHost = false // shortcuts could be read at the last reload: this is the home app
     private val loader = Dispatchers.Default.limitedParallelism(1)
+    private val reloadLock = Mutex()
     private val widgetViews = HashMap<Int, AppWidgetHostView>()
 
     var apps by mutableStateOf(emptyList<App>())
         private set
     val find: (AppId) -> App? by derivedStateOf { finder(apps) { it.id } }
+    private var webShortcuts by mutableStateOf(emptyList<AppShortcut>())
+    val drawerEntries: List<DrawerEntry> by derivedStateOf {
+        (apps.map { it.drawerEntry() } + webShortcuts.map {
+            val owner = appOf(it.target)
+            DrawerEntry(it.target, it.info.label, it.icon ?: owner?.icon, owner)
+        }).sortedBy { fold(it.label) }
+    }
+    val findEntry: (String) -> DrawerEntry? by derivedStateOf { drawerFinder(drawerEntries) { it.target } }
     val layout get() = Layouts.current
     var drawerOpen by mutableStateOf(false)
     var focusSearch by mutableStateOf(false) // drawer opened from the search bar
@@ -218,6 +261,9 @@ class Launcher : ComponentActivity() {
         override fun onPackagesUnavailable(packageNames: Array<String>, user: UserHandle, replacing: Boolean) = reload(*packageNames)
         override fun onPackagesSuspended(packageNames: Array<String>, user: UserHandle) = reload()
         override fun onPackagesUnsuspended(packageNames: Array<String>, user: UserHandle) = reload()
+        override fun onShortcutsChanged(packageName: String, shortcuts: List<ShortcutInfo>, user: UserHandle) {
+            if (user == Process.myUserHandle()) reload()
+        }
     }
 
     private val dateReceiver = object : BroadcastReceiver() {
@@ -270,6 +316,8 @@ class Launcher : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         updateToday() // the midnight broadcast is missed while the screen is off
+        // Becoming the home app, or no longer being it, changes which shortcuts can be read; other changes have callbacks.
+        if (launcherApps.hasShortcutHostPermission() != shortcutHost) reload()
         resumes++
     }
 
@@ -327,21 +375,46 @@ class Launcher : ComponentActivity() {
     /** Re-reads the app list, reusing cached icons except for the [changed] packages. */
     private fun reload(vararg changed: String) {
         lifecycleScope.launch {
-            val list = withContext(loader) {
-                try {
-                    loadApps(changed.toSet())
-                } catch (e: RuntimeException) { // a profile or package vanished mid-read; keep the current list
-                    Log.w(TAG, "App list reload failed", e)
-                    null
+            reloadLock.withLock {
+                val previousApps = apps
+                apps = withContext(loader) {
+                    readOrKeep(previousApps, { loadApps(changed.toSet()) }) {
+                        Log.w(TAG, "App list reload failed", it)
+                    }
                 }
+                val previousShortcuts = webShortcuts
+                webShortcuts = withContext(loader) {
+                    readOrKeep(previousShortcuts, ::loadWebShortcuts) {
+                        Log.w(TAG, "Web shortcut reload failed", it)
+                    }
+                }
+                val discovered = drawerEntries.filter { it.target is Target.Shortcut || it.app?.webApp == true }
+                // Only as the home app: else no web shortcut can be read, and they would all count as new later.
+                if (shortcutHost) Layouts.discoverWebApps(discovered)
             }
-            if (list != null) apps = list
+        }
+    }
+
+    private fun loadWebShortcuts(): List<AppShortcut> {
+        shortcutHost = launcherApps.hasShortcutHostPermission()
+        if (!shortcutHost) return emptyList()
+        val query = LauncherApps.ShortcutQuery().setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+        val browsers = HashMap<String, Boolean>()
+        return launcherApps.getShortcuts(query, Process.myUserHandle()).orEmpty().filter {
+            isBrowserWebShortcut(browsers.getOrPut(it.`package`) { isBrowser(it.`package`) }, it.isPinned, it.isDynamic, it.isDeclaredInManifest, it.isEnabled)
+        }.map { s ->
+            // Read and saved again only once the shortcut changed, not on every reload.
+            val key = Target.Shortcut(s.`package`, s.id, s.label).entryId()
+            val icon = webIcons[key]?.takeIf { it.first == s.lastChangedTimestamp }?.second
+                ?: keepShortcutIcon(s)?.also { webIcons[key] = s.lastChangedTimestamp to it }
+            AppShortcut(s, icon)
         }
     }
 
     private fun loadApps(changed: Set<String>): List<App> {
         icons.keys.removeAll { it.substringBefore('/') in changed }
         installTimes.keys.removeAll { it in changed }
+        webPackages.keys.removeAll { it.substringBefore('#') in changed }
         val size = (56 * resources.displayMetrics.density).toInt()
         return launcherApps.profiles
             .flatMap { launcherApps.getActivityList(null, it) }
@@ -350,7 +423,13 @@ class Launcher : ComponentActivity() {
                 val icon = icons.getOrPut(id) { info.getBadgedIcon(0).toBitmap(size, size).asImageBitmap() }
                 // A binder call, read as this user: a work profile's copy would get the main profile's date, or none.
                 val installed = if (info.user != Process.myUserHandle()) 0 else installTimes.getOrPut(info.componentName.packageName) { info.firstInstallTime }
-                App(id, info.label.toString(), icon, info, info.applicationInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0, installed.takeIf { it > 0 }?.div(DAY_MS))
+                val webApp = cachedWebApp(webPackages, packageKey(id), {
+                    val metadata = launcherApps.getApplicationInfo(info.componentName.packageName, PackageManager.GET_META_DATA, info.user).metaData
+                    isPackagedWebApp(metadata?.getString("org.chromium.webapk.shell_apk.startUrl"), metadata?.getString("org.chromium.webapk.shell_apk.webManifestUrl"))
+                }) {
+                    Log.w(TAG, "Web app metadata unavailable for ${info.componentName.packageName}", it)
+                }
+                App(id, info.label.toString(), icon, info, info.applicationInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0, installed.takeIf { it > 0 }?.div(DAY_MS), webApp)
             }
             .sortedBy { fold(it.label) }
     }
@@ -478,7 +557,7 @@ class Launcher : ComponentActivity() {
     fun hides(target: Target?) = layout.hideSuspended && appOf(target)?.suspended == true
 
     /** The apps the drawer tabs list from: without the paused ones when Ajustes hides them (search still shows them). */
-    val tabbed get() = if (layout.hideSuspended) apps.filterNot { it.suspended } else apps
+    val tabbed get() = if (layout.hideSuspended) drawerEntries.filterNot { it.app?.suspended == true } else drawerEntries
 
     // Opens of each poison app today, as "<date>|<package>#<user>" counts; older days are dropped on the next write.
     private val opens by lazy { getSharedPreferences("opens", MODE_PRIVATE) }
