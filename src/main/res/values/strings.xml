@@ -277,6 +277,8 @@
     <string name="pin_text">“%1$s”, from %2$s</string>
 
     <string name="pin_add_failed">Couldn\'t add “%1$s”</string>
+    <string name="shortcut_delete">Delete shortcut</string>
+    <string name="shortcut_delete_failed">Couldn\'t delete “%1$s”</string>
     <string name="pin_added">Added to home screen</string>
     <string name="pin_already_added">Shortcut already on the home screen or dock</string>
 
@@ -320,7 +322,7 @@
     <string name="guide_drawer">Open and close</string>
     <string name="guide_drawer_how">Swipe up on the home screen; to close it, pull down from the top of the list</string>
     <string name="guide_web_apps">Installed web apps</string>
-    <string name="guide_web_apps_how">Installed WebAPKs and accepted browser web shortcuts appear in the drawer and search; new ones are also added to Home, once. Removing a Home icon keeps it in the drawer. Shortcuts pinned by another launcher may need adding again from the browser</string>
+    <string name="guide_web_apps_how">Installed WebAPKs and accepted browser web shortcuts appear in the drawer and search; new ones are also added to Home, once. Removing a Home icon keeps it in the drawer; Delete shortcut, in a web shortcut\'s menu, removes it everywhere. Shortcuts pinned by another launcher may need adding again from the browser</string>
     <string name="guide_drawer_grid_how">Its columns, and how many rows fit on one screen, in Settings → App drawer</string>
     <string name="guide_tabs_how">Swipe sideways from one to the next; long-press one to rename it, add a tab, or delete a tab of picked apps</string>
     <string name="guide_tab_apps">A tab\'s apps</string>

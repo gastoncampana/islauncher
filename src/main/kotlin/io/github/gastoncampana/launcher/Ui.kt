@@ -725,6 +725,8 @@ private fun ItemMenu(l: Launcher, page: Int, item: Item) {
         if (app != null) MenuItem(l, stringResource(R.string.menu_app_info)) { l.showInfo(app) }
         if (app != null && target is Target.App && app.removable) MenuItem(l, stringResource(R.string.uninstall)) { l.uninstall(app) }
         if (item is Item.Widget && item.widgetId != 0) MenuItem(l, stringResource(R.string.widget_reconfigure)) { l.unbind(page, item) }
+        // Only a web shortcut, which the drawer lists: removing any other pinned shortcut's icon already hides it.
+        if (target is Target.Shortcut && l.findEntry(target.entryId()) != null) MenuItem(l, stringResource(R.string.shortcut_delete)) { l.deleteShortcut(target) }
         MenuItem(l, stringResource(R.string.remove)) { l.remove(page, item) }
     }
     // The other pages, the main one marked: the item keeps its spot there if free, else takes the nearest one.
@@ -1354,6 +1356,7 @@ private fun DrawerApp(l: Launcher, mover: Mover, entry: DrawerEntry, height: Dp,
             MenuItem(l, stringResource(if (hidden) R.string.drawer_show_app else R.string.drawer_hide_app)) {
                 l.update { it.copy(hidden = it.hidden.toggled(entry, entry.id, l.findEntry)) }
             }
+            (entry.target as? Target.Shortcut)?.let { MenuItem(l, stringResource(R.string.shortcut_delete)) { l.deleteShortcut(it) } }
             if (app != null) {
                 val poison = l.isPoison(app)
                 MenuItem(l, stringResource(if (poison) R.string.poison_unmark else R.string.poison_mark)) {

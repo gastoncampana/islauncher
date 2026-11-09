@@ -13,6 +13,22 @@ class WebAppsTest {
     private val packaged = Target.App("web.apk/web.Main#0")
 
     @Test
+    fun deletingAWebShortcutDropsItEverywhereAndKeepsTheRest() {
+        val renamed = Item.Icon(board.copy(label = "My board"), "My board", Cell(0f, 0f))
+        val layout = Layout(
+            desktop = listOf(listOf(renamed, Item.Icon(music, "Music", Cell(1f, 0f))), listOf(Item.Icon(packaged, "Web", Cell(0f, 0f)))),
+            dock = listOf(listOf(DockIcon(tap = board, up = music, down = board), DockIcon(tap = music))),
+            tabs = listOf(Tab("Apps"), Tab("Web", setOf(board.entryId(), music.entryId()))),
+            hidden = setOf(board.entryId(), packaged.id),
+        )
+        val next = layout.withoutShortcut(board)
+        assertEquals(listOf(listOf(Item.Icon(music, "Music", Cell(1f, 0f))), listOf(Item.Icon(packaged, "Web", Cell(0f, 0f)))), next.desktop)
+        assertEquals(listOf(listOf(DockIcon(up = music), DockIcon(tap = music))), next.dock)
+        assertEquals(listOf(Tab("Apps"), Tab("Web", setOf(music.entryId()))), next.tabs)
+        assertEquals(setOf(packaged.id), next.hidden)
+    }
+
+    @Test
     fun missingWebMetadataDoesNotDiscardUnrelatedNativeAppsOrCacheTheFailure() {
         val cache = mutableMapOf<String, Boolean>()
         val failures = mutableListOf<Exception>()

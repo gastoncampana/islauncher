@@ -102,7 +102,9 @@ the time automatic during a block).
   retains each entry's actual `Target`; app-only actions never use a web shortcut's browser as the selected app.
   `Layouts.discoverWebApps` saves `knownWebApps` beside the layout in one preferences edit. This local discovery
   record is not in layout backups and survives missing query results or removal from Home. `withPinnedIcon` is
-  idempotent across desktop/dock targets and adds a page when needed. The drawer, search, tab/hidden checklists
+  idempotent across desktop/dock targets and adds a page when needed. Eliminar atajo (a web shortcut's drawer or
+  desktop menu) is `Launcher.deleteShortcut`: it unpins the shortcut (`pinShortcuts` with the package's other pinned
+  ids), drops it with `withoutShortcut` (desktop, dock, tabs, hidden; renamed icons too) and deletes its saved icon. The drawer, search, tab/hidden checklists
   and settings preview all use `drawerEntries`/`findEntry`; native-app pickers and poison settings stay native-only.
   Reconciliation runs on package/shortcut callbacks, and on resume only when `hasShortcutHostPermission` no longer
   matches `shortcutHost` (made the home app, or no longer it), serialized by `reloadLock`. Discovery runs only as the

@@ -65,6 +65,18 @@ fun Layout.withPinnedIcon(target: Target, label: String): Layout {
     return placed(defaultPage, Item.Icon(target, label, Cell(0f, 0f)))
 }
 
+/** Without [shortcut] anywhere: its desktop icons (renamed ones too), dock targets, tab memberships and hiding. */
+fun Layout.withoutShortcut(shortcut: Target.Shortcut): Layout {
+    fun gone(t: Target?) = t is Target.Shortcut && t.pkg == shortcut.pkg && t.id == shortcut.id
+    val id = shortcut.entryId()
+    return copy(
+        desktop = desktop.map { items -> items.filterNot { it is Item.Icon && gone(it.target) } },
+        dock = dock.map { icons -> icons.map { DockIcon(it.tap.takeUnless(::gone), it.up.takeUnless(::gone), it.down.takeUnless(::gone)) } },
+        tabs = tabs.map { tab -> tab.copy(apps = tab.apps?.minus(id)) },
+        hidden = hidden - id,
+    )
+}
+
 /**
  * Known identities outlive desktop removal and temporary discovery gaps, so a refresh cannot undo a user's choice.
  * A null [known] is the first discovery: the web apps already installed are only recorded, so Home does not change.

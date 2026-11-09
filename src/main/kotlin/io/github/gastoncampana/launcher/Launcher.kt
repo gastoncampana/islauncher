@@ -626,17 +626,39 @@ class Launcher : ComponentActivity() {
         }
     }
 
+    /** The ids of [pkg]'s shortcuts this launcher has pinned: all of them, or those among [ids]. */
+    private fun pinnedIds(pkg: String, user: UserHandle, ids: List<String>? = null) = launcherApps.getShortcuts(
+        LauncherApps.ShortcutQuery().setPackage(pkg).setShortcutIds(ids)
+            .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED or LauncherApps.ShortcutQuery.FLAG_GET_KEY_FIELDS_ONLY),
+        user,
+    ).orEmpty().map { it.id }
+
     /** Pins [shortcut], from an app's menu, to the desktop. */
     fun pin(shortcut: ShortcutInfo) = addShortcut(shortcut) {
-        fun pinned(ids: List<String>?) = launcherApps.getShortcuts(
-            LauncherApps.ShortcutQuery().setPackage(shortcut.`package`).setShortcutIds(ids)
-                .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED or LauncherApps.ShortcutQuery.FLAG_GET_KEY_FIELDS_ONLY),
-            shortcut.userHandle,
-        ).orEmpty().map { it.id }
         // pinShortcuts replaces the package's pinned list: the ones already pinned (a browser's web shortcuts) must stay.
-        launcherApps.pinShortcuts(shortcut.`package`, (pinned(null) + shortcut.id).distinct(), shortcut.userHandle)
+        launcherApps.pinShortcuts(shortcut.`package`, (pinnedIds(shortcut.`package`, shortcut.userHandle) + shortcut.id).distinct(), shortcut.userHandle)
         // It skips an id the app dropped since its menu opened (chat apps reshuffle recent chats), without a word.
-        pinned(listOf(shortcut.id)).isNotEmpty()
+        pinnedIds(shortcut.`package`, shortcut.userHandle, listOf(shortcut.id)).isNotEmpty()
+    }
+
+    /**
+     * Unpins a web shortcut, so its browser may discard it, and drops it from the layout with its saved icon; the
+     * drawer loses it when the shortcut change comes back. Main profile only, as [Target.Shortcut] keeps no user.
+     */
+    fun deleteShortcut(shortcut: Target.Shortcut) {
+        val user = Process.myUserHandle()
+        try {
+            launcherApps.pinShortcuts(shortcut.pkg, pinnedIds(shortcut.pkg, user) - shortcut.id, user)
+        } catch (e: RuntimeException) { // no longer the home app, or the user is locked
+            Log.w(TAG, "Cannot unpin ${shortcut.label}", e)
+            return toast(getString(R.string.shortcut_delete_failed, shortcut.label))
+        }
+        update { it.withoutShortcut(shortcut) }
+        // A thrown icon of it does not come back on Deshacer either.
+        thrown?.let { t -> if (Layout(desktop = listOf(listOf(t.item))).withoutShortcut(shortcut).desktop[0].isEmpty()) thrown = null }
+        // ponytail: a reload already past its query may write the icon back: an orphan file, never shown. Deleting it
+        // under reloadLock would block the main thread on that reload's binder calls.
+        shortcutIconFile(shortcut).delete()
     }
 
     /** Browsers draw their own badge on the web shortcuts they pin (Chrome does). Hostless, so app links don't match. */

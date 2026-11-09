@@ -192,7 +192,8 @@ A launcher sees every app you have and every app you open, so this one is built 
   the drawer), without moving existing icons; a full desktop gets another page. Removing a Home
   icon does not remove the drawer entry or cause it to be added back on each refresh. Web shortcuts open their
   own destination, can be dragged to Home or the dock, and can be assigned to tabs or hidden independently.
-  Their menus do not offer to uninstall the browser. Android does not expose another launcher's private pinned
+  Their menus do not offer to uninstall the browser; Delete shortcut, in a web shortcut's menu in the drawer or on
+  Home, unpins it and removes it from Home, the dock, tabs and hidden apps. Android does not expose another launcher's private pinned
   shortcuts: add those again from the browser if they are missing.
 - Accent-insensitive search that ranks prefix matches first. Among equally good matches, the apps you open more
   often and more recently come first, so `s` and Go opens the app you use, not a rarely used one. The keyboard's Go
