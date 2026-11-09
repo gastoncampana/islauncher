@@ -493,7 +493,7 @@ Kotlin sources are in `src/main/kotlin/io/github/gastoncampana/launcher/`, and t
 | `Blocking.kt` | Blocks on Android: their store, the accessibility service that keeps apps and sites closed, the notification listener that snoozes and pauses, the device admin and the setup checks. |
 | `Ui.kt` | The Compose UI: desktop, dock, search bar, drawer, menus and dialogs, the pause screen, the settings and the block editor. |
 | `ModelTest.kt`, `NovaTest.kt`, `BlocksTest.kt` | Unit tests for the model, the Nova converter and blocks. |
-| `scripts/install.sh` | Builds and installs an update over adb without losing the default home choice. |
+| `scripts/install.sh` | Builds and installs an update over adb without losing the default home choice or the blocks' accessibility service. |
 | `scripts/release.sh` | Builds the APK for a release: runs the tests and checks the signature and the permissions. |
 | `scripts/blocks-setup.sh` | Sets blocks up over adb, once: the secure settings permission, the device admin, notification access and the accessibility service. |
 | `CLAUDE.md` | Invariants and architecture notes for contributors and coding agents. |

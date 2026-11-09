@@ -3,7 +3,8 @@
 # When an update kills the running home app, a system thread can resolve HOME while the package is half-replaced and
 # drop the "always" home choice as dangling. The HOME role stays, so nothing restores the choice and the next Home
 # press asks which launcher to use. So the app is stopped before the install, with Settings in front when it is on
-# screen so the system does not start it again meanwhile.
+# screen so the system does not start it again meanwhile. A force stop also turns off the app's accessibility service,
+# which blocks need, so the accessibility settings are put back as they were.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 pkg=io.github.gastoncampana.launcher
@@ -18,8 +19,14 @@ if adb shell dumpsys window | grep "mCurrentFocus=.*$pkg" > /dev/null; then fron
 default=false
 if home_is_ours; then default=true; fi
 if $front; then adb shell am start -W -a android.settings.SETTINGS > /dev/null; fi
+services=$(adb shell settings get secure enabled_accessibility_services | tr -d '\r')
+enabled=$(adb shell settings get secure accessibility_enabled | tr -d '\r')
 adb shell am force-stop $pkg
 adb install -r build/outputs/apk/release/islauncher-release.apk
+if [[ $services == *"$pkg/"* && $(adb shell settings get secure enabled_accessibility_services | tr -d '\r') != "$services" ]]; then
+  adb shell settings put secure enabled_accessibility_services "$services"
+  adb shell settings put secure accessibility_enabled "$enabled"
+fi
 if home_is_ours; then
   if $front; then adb shell input keyevent HOME; fi
 elif $default; then

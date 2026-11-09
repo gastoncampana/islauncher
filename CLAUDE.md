@@ -18,7 +18,9 @@ and a notification's package and key, and log or keep none of it beyond the bloc
 
 - Build and install on the USB-connected phone: `scripts/install.sh`. Not `./gradlew installRelease`: an update that kills
   the running home app can make Android drop the "always" home choice (the HOME role stays, the choice doesn't, so
-  Home asks which launcher to use). The script stops the app first and warns if the choice was lost anyway.
+  Home asks which launcher to use). The script stops the app first and warns if the choice was lost anyway. A force stop
+  turns off the app's accessibility service (blocks stop working), so the script puts the accessibility settings back;
+  never `am force-stop` it by hand on a phone with blocks set up.
 - Unit tests: `./gradlew testDebugUnitTest`
 - Build a GitHub release APK: `scripts/release.sh` (tests, signature and no-INTERNET checks, SHA-256 for the notes).
   From any machine instead: push a `vX.Y.Z` tag that matches `versionName`. `.github/workflows/release.yml` waits for
