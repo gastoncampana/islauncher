@@ -2790,7 +2790,6 @@ private fun GridDialog(l: Launcher, p: Popup.Grid) {
 
 // --- Ajustes → Bloqueos ---
 
-private const val MAX_BLOCK_NAME = 60
 private const val MAX_SITE_TYPED = 253 // a host name's longest
 
 /** A note in a section's grey, as Sin abrir hace tiempo starts. */

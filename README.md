@@ -322,10 +322,9 @@ A launcher sees every app you have and every app you open, so this one is built 
 <details>
 <summary><strong>Backups</strong></summary>
 
-- Manual backups: save the whole layout (desktop, dock, tabs, hidden apps, poisons and settings) to a JSON file, or
-  restore it from one. Restoring replaces the current layout.
-- Blocks are not in any backup, so neither a restore nor a Nova import changes them: a running block cannot be undone
-  that way.
+- Manual backups: save the whole layout (desktop, dock, tabs, hidden apps, poisons and settings) and your blocks to a
+  JSON file, or restore it from one. Restoring replaces the current layout but only adds the blocks you lack: it never
+  removes or changes one, so a running block cannot be undone that way. A Nova import leaves blocks alone.
 - Weekly backups go to a folder you choose. The first copy is written right away, and then one whenever you come
   back to the home screen and seven days have passed since the last one, so no background scheduler is needed. A
   failed copy is retried the next day. Each copy is a new dated file; old ones are not deleted.

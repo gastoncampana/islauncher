@@ -237,4 +237,25 @@ class BlocksTest {
         val anchor = Anchor(1L, 2L, 3)
         assertEquals(anchor, parseAnchor(anchorToJson(anchor)))
     }
+
+    @Test
+    fun aBackupCarriesTheBlocksBesideTheLayout() {
+        val layout = Layout(poisons = setOf("a/b#0"))
+        val json = backupJson(layout, listOf(work, night))
+        assertEquals(layout, parseLayout(json))
+        assertEquals(listOf(work, night), backupRules(json))
+        assertEquals(emptyList<Rule>(), backupRules(layout.toJson())) // a backup from before blocks went in
+    }
+
+    @Test
+    fun aRestoreOnlyAddsTheBlocksThePhoneLacks() {
+        val t = at(0, 10) // work runs
+        val loosened = work.copy(packages = emptySet(), sites = setOf("x.com"))
+        val allWeek = Rule("a", "", setOf("p"), emptySet(), listOf(span(DayOfWeek.entries.toSet(), 0, DAY_MINUTES)))
+        val badSite = Rule("s", "", emptySet(), setOf("com"), night.spans)
+        val longName = night.copy(id = "l", name = "x".repeat(MAX_BLOCK_NAME + 1))
+        val restored = withRestored(listOf(work), listOf(loosened, night, night.copy(name = "twice"), allWeek, badSite, longName), t)
+        // The running one stays as it is; the new one comes once; one a new block could not be is left out.
+        assertEquals(listOf(work, night), restored)
+    }
 }

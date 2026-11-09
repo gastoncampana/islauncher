@@ -933,7 +933,7 @@ class Launcher : ComponentActivity() {
         override fun createIntent(context: Context, input: String) = super.createIntent(context, input).putExtra(Intent.EXTRA_LOCAL_ONLY, true)
     }) { uri ->
         if (uri == null) return@registerForActivityResult
-        val json = layout.toJson()
+        val json = backupJson(layout, BlockStore.rules)
         lifecycleScope.launch {
             try {
                 writeBackup(uri, json)
@@ -955,7 +955,14 @@ class Launcher : ComponentActivity() {
                     bytes.decodeToString()
                 }
                 val live = host.appWidgetIds.associateWith { widgetManager.getAppWidgetInfo(it)?.provider?.flattenToString() }
-                replaceLayout(parseLayout(json).restored(live))
+                val restored = parseLayout(json).restored(live)
+                val rules = backupRules(json) // read first: an unreadable file changes nothing
+                replaceLayout(restored)
+                val next = withRestored(BlockStore.rules, rules, BlockStore.now())
+                if (next.size > BlockStore.rules.size) {
+                    BlockStore.save(next)
+                    guardBlocks()
+                }
                 toast(getString(R.string.backup_restored))
             } catch (e: Exception) { // not a backup of this launcher, or unreadable
                 Log.w(TAG, "Restore failed", e)
@@ -1015,7 +1022,7 @@ class Launcher : ComponentActivity() {
         val today = LocalDate.now().toEpochDay()
         if (today - backups.getLong("last", 0) < 7 || backups.getLong("tried", 0) == today) return
         backups.edit { putLong("tried", today) } // a failing copy is retried once a day, not on every return home
-        val json = layout.toJson()
+        val json = backupJson(layout, BlockStore.rules)
         lifecycleScope.launch {
             try {
                 val file = withContext(Dispatchers.IO) {

@@ -66,7 +66,7 @@ private const val NOTICE_MS = 3000L // a notice of why an app or site went, as l
 
 /**
  * The blocks ([Rule]) and the clock they go by, shared by the services and Ajustes in the home screen's process. Prefs
- * "blocks", apart from the layout: a restored backup or a Nova import never touches them.
+ * "blocks", apart from the layout: a Nova import never touches them, and a restored backup only adds ([withRestored]).
  */
 object BlockStore {
     private lateinit var prefs: SharedPreferences

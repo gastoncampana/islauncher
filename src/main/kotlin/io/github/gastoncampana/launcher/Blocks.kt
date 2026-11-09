@@ -18,6 +18,8 @@ const val WEEK_MINUTES = 7 * DAY_MINUTES
 /** Least time in a row a block must leave free each week: one locked all week round could only go with a factory reset. */
 const val FREE_MINUTES = 60
 
+const val MAX_BLOCK_NAME = 60
+
 /** How long a browser may show no address bar after coming to the front, during a block with sites, before it goes. */
 const val UNREAD_GRACE_MS = 2500L
 
@@ -243,7 +245,7 @@ fun trustedTime(wallMs: Long, elapsedMs: Long, boot: Int, anchor: Anchor?, runni
     return Anchor(if (abs(wallMs - expected) > MAX_DRIFT_MS && running(expected)) expected else wallMs, elapsedMs, boot)
 }
 
-// --- Storage: prefs "blocks", apart from the layout so backups and Nova imports never touch them ---
+// --- Storage: prefs "blocks", apart from the layout: Nova imports never touch them, and a restore only adds ---
 
 fun rulesToJson(rules: List<Rule>): String = JSONArray(rules.map { r ->
     JSONObject()
@@ -270,6 +272,23 @@ fun parseRules(json: String): List<Rule> {
                 Span(days, s.getInt("start"), s.getInt("end"))
             },
         )
+    }
+}
+
+/** A backup: the layout's JSON, with the blocks under "blocks". */
+fun backupJson(layout: Layout, rules: List<Rule>): String = JSONObject(layout.toJson()).put("blocks", JSONArray(rulesToJson(rules))).toString()
+
+/** The blocks in a backup: none in one saved before backups carried them. */
+fun backupRules(json: String): List<Rule> = JSONObject(json).optJSONArray("blocks")?.let { parseRules(it.toString()) }.orEmpty()
+
+/**
+ * [current] plus the [saved] blocks it lacks (by id), each checked as a new one is. Only adding: a restore never removes
+ * or changes a block, so it cannot undo a running one.
+ */
+fun withRestored(current: List<Rule>, saved: List<Rule>, t: LocalDateTime): List<Rule> {
+    val ids = current.mapTo(HashSet()) { it.id }
+    return current + saved.filter { r ->
+        r.name.length <= MAX_BLOCK_NAME && r.sites.all { site(it) == it } && problemSaving(r, null, t) == null && ids.add(r.id)
     }
 }
 

@@ -263,11 +263,11 @@
     <!-- Backup -->
     <string name="backup_manual">Manual</string>
     <string name="backup_save">Guardar copia</string>
-    <string name="backup_save_summary">Escritorio, dock, pestañas, venenos y ajustes, en un archivo</string>
+    <string name="backup_save_summary">Escritorio, dock, pestañas, venenos, bloqueos y ajustes, en un archivo</string>
     <string name="backup_restore">Restaurar copia</string>
-    <string name="backup_restore_summary">Reemplaza todo por lo de un archivo guardado</string>
+    <string name="backup_restore_summary">Reemplaza todo por lo de un archivo guardado; los bloqueos solo se suman</string>
     <string name="backup_restore_title">Restaurar una copia</string>
-    <string name="backup_restore_text">Reemplaza el escritorio, el dock, las pestañas y los ajustes. Los widgets que falten se vuelven a configurar tocándolos.</string>
+    <string name="backup_restore_text">Reemplaza el escritorio, el dock, las pestañas y los ajustes, y suma los bloqueos que falten: nunca quita ni cambia uno. Los widgets que falten se vuelven a configurar tocándolos.</string>
     <string name="backup_automatic">Automática</string>
     <string name="backup_weekly">Copia semanal</string>
     <string name="backup_weekly_in">En %1$s</string>
@@ -384,7 +384,7 @@
     <string name="guide_open_settings_how">Mantené presionado un lugar vacío del escritorio → Ajustes</string>
     <string name="guide_home_app_how">Ajustes → App de inicio: elegí Islauncher para que el botón de inicio lo abra; solo así andan los atajos de una app y los de otras apps</string>
     <string name="guide_backup">Copia manual</string>
-    <string name="guide_backup_how">Guardá el escritorio, el dock, las pestañas y los ajustes en un archivo y restauralos después; tras reinstalar, los atajos del escritorio se vuelven a agregar desde su app</string>
+    <string name="guide_backup_how">Guardá el escritorio, el dock, las pestañas, los ajustes y los bloqueos en un archivo y restauralos después (restaurar solo suma los bloqueos que falten); tras reinstalar, los atajos del escritorio se vuelven a agregar desde su app</string>
     <string name="guide_weekly_how">Una copia nueva por semana en la carpeta que elijas; las viejas quedan</string>
     <string name="guide_nova_how">Trae el escritorio, el dock, las pestañas, las apps ocultas y las grillas de un archivo .novabackup</string>
     <string name="guide_offline">Sin internet</string>

@@ -252,11 +252,11 @@
     <!-- Backup -->
     <string name="backup_manual">Manual</string>
     <string name="backup_save">Save backup</string>
-    <string name="backup_save_summary">Home screen, dock, tabs, poisons and settings, in a file</string>
+    <string name="backup_save_summary">Home screen, dock, tabs, poisons, blocks and settings, in a file</string>
     <string name="backup_restore">Restore backup</string>
-    <string name="backup_restore_summary">Replaces everything with a saved file</string>
+    <string name="backup_restore_summary">Replaces everything with a saved file; blocks are only added</string>
     <string name="backup_restore_title">Restore a backup</string>
-    <string name="backup_restore_text">Replaces the home screen, dock, tabs and settings. Missing widgets are set up again by tapping them.</string>
+    <string name="backup_restore_text">Replaces the home screen, dock, tabs and settings, and adds the blocks you lack: it never removes or changes one. Missing widgets are set up again by tapping them.</string>
     <string name="backup_automatic">Automatic</string>
     <string name="backup_weekly">Weekly backup</string>
     <string name="backup_weekly_in">In %1$s</string>
@@ -371,7 +371,7 @@
     <string name="guide_open_settings_how">Long-press an empty spot on the home screen → Settings</string>
     <string name="guide_home_app_how">Settings → Home app: pick Islauncher, so the Home button opens it; only then do an app\'s shortcuts and shortcuts from other apps work</string>
     <string name="guide_backup">Manual backup</string>
-    <string name="guide_backup_how">Save the home screen, dock, tabs and settings to a file and restore them later; after a reinstall, add home screen shortcuts again from their app</string>
+    <string name="guide_backup_how">Save the home screen, dock, tabs, settings and blocks to a file and restore them later (a restore only adds the blocks you lack); after a reinstall, add home screen shortcuts again from their app</string>
     <string name="guide_weekly_how">A new copy each week in a folder you choose; the old ones stay</string>
     <string name="guide_nova_how">Brings the home screen, dock, tabs, hidden apps and grids from a .novabackup file</string>
     <string name="guide_offline">No internet</string>

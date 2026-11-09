@@ -81,7 +81,9 @@ the time automatic during a block).
   during a block. The fixtures in `BlocksTest` are real address bars of seven browsers (Chrome, Brave, Edge, Opera,
   DuckDuckGo, Samsung Internet, Firefox), read on a Motorola with Android 13.
 - `Blocking.kt`: `BlockStore` (prefs `blocks`: key `rules`, `anchor` for the clock, `read.<pkg>` the day a browser's
-  bar was last read; never in the layout, so backups and Nova imports leave blocks alone), `BlockService` (the
+  bar was last read; never in the layout: a backup carries the rules under its own key, `backupJson`, and a restore
+  goes through `withRestored`, which only adds the ones missing, each checked as a new one, so it cannot undo a running
+  block; Nova imports leave blocks alone), `BlockService` (the
   accessibility service: a blocked app goes home whatever opened it; a browser on a blocked site goes back, or home if
   that leaves it there; a browser not read within `UNREAD_GRACE_MS` of coming to the front goes home; during a block,
   Ajustes' pages that would undo it go home, found by class and title), `BlockListener` (snoozes a blocked app's
