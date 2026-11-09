@@ -495,6 +495,11 @@ Kotlin sources are in `src/main/kotlin/io/github/gastoncampana/launcher/`, and t
 | `scripts/blocks-setup.sh` | Sets blocks up over adb, once: the secure settings permission, the device admin, notification access and the accessibility service. |
 | `CLAUDE.md` | Invariants and architecture notes for contributors and coding agents. |
 
+## Thanks
+
+[@Frank21111](https://github.com/Frank21111) contributed blocks ([#1](https://github.com/gastoncampana/islauncher/pull/1)): the
+apps and sites kept closed on a schedule, in any browser.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Islauncher is not affiliated with or endorsed by Nova Launcher or its developers.
