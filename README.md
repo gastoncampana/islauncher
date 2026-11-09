@@ -17,20 +17,21 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="31%" alt="Home screen with a clock widget, app icons and the dock">
-  <img src="docs/screenshots/drawer.png" width="31%" alt="App drawer with tabs">
-  <img src="docs/screenshots/search.png" width="31%" alt="Search answering a unit conversion">
+  <img src="docs/screenshots/home.png" width="31%" alt="Home screen with a clock widget, two rows of apps, the dock and the search bar">
+  <img src="docs/screenshots/drawer.png" width="31%" alt="App drawer with its tabs: all apps, work, leisure and tools">
+  <img src="docs/screenshots/search.png" width="31%" alt="Search answering a unit conversion: 2 cups in ml">
 </p>
 <p align="center">
-  <img src="docs/screenshots/pause.png" width="31%" alt="The pause before a poison app opens">
+  <img src="docs/screenshots/pause.png" width="31%" alt="The pause before a poison app opens, offering another app instead">
   <img src="docs/screenshots/widgets.png" width="31%" alt="Widget picker with previews">
   <img src="docs/screenshots/guide.png" width="31%" alt="The feature guide in Settings">
 </p>
 <p align="center">
-  <img src="docs/screenshots/blocks.png" width="31%" alt="Settings → Blocks with a running block, a scheduled one and the browsers it reads">
+  <img src="docs/screenshots/blocks.png" width="31%" alt="Settings → Blocks: setup done, a running block and a scheduled one, each with a thumbnail of its week">
   <img src="docs/screenshots/block-editor.png" width="31%" alt="A running block: its apps and sites can only be added to">
-  <img src="docs/screenshots/block-hours.png" width="31%" alt="A block's hours: days, a start and an end that runs into the next day">
+  <img src="docs/screenshots/block-hours.png" width="31%" alt="A block's hours: a chart of the week above its ranges, one into the next morning and one all weekend">
 </p>
+<p align="center"><sub>On a Motorola with Android 13, in Spanish, one of the app's two languages.</sub></p>
 
 ## Why Islauncher
 
