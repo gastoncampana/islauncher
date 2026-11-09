@@ -75,7 +75,7 @@ the time automatic during a block).
   next day, midnight as an end is 1440). `activeAt`, `blockedUntil` (rules back to back count as one), `nextChange` (timers wait for it with
   `millisBetween`, which counts a clock change),
   `problemSaving` (something to block, valid spans, `FREE_MINUTES` free in a row each week, and while running only
-  `tightened`), `canRemove`. `readAddress` turns a browser's `BarNode`s into an `Address` (Site, Own, Typing, Unknown):
+  `tightened`), `canRemove`, `hourRuns` (a cell of the week chart). `readAddress` turns a browser's `BarNode`s into an `Address` (Site, Own, Typing, Unknown):
   bar ids (url, omnibar, location_bar, address, domain) in the top quarter or bottom fifth, text and description both,
   bidi marks stripped; only a focused field of the browser's own is typing. `trustedTime` ignores a wall-clock jump
   during a block. The fixtures in `BlocksTest` are real address bars of seven browsers (Chrome, Brave, Edge, Opera,
@@ -157,7 +157,9 @@ the time automatic during a block).
   toast saying it is paused.
   Bloqueos is `Section.BLOCKS` (`BlocksSettings`): the three user-granted setup steps (read again on each `Launcher.resumes`), optional secure settings protection, the blocks,
   the browsers and whether their bar was read; `Popup.EditBlock` is the full-screen `BlockEditor`, whose trash on what
-  a running block had only says so, and whose save checks `problemSaving` again as it saves. It is the one popup that
+  a running block had only says so, and whose save checks `problemSaving` again as it saves; `WeekChart` draws its spans
+  (full above the ranges, a thumbnail in the list) and `SpanDialog` adds one, with `DAY_GROUPS` and All day as shortcuts.
+  The editor is the one popup that
   outlives leaving the home screen: `onStop` keeps it, and `onNewIntent` from another app leaves it and Ajustes open
   (its draft lives in its composition; Home pressed while it shows still closes it).
 - The layout is stored as JSON in SharedPreferences `launcher`, key `layout`; key `launched` marks the first launch, for

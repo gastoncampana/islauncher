@@ -439,6 +439,11 @@
     <string name="blocks_next_day">Ends the next day</string>
     <string name="blocks_every_day">Every day</string>
     <string name="blocks_span_summary">%1$s · %2$s–%3$s</string>
+    <string name="blocks_span_all_day">%1$s · all day</string>
+    <string name="blocks_days_weekdays">Weekdays</string>
+    <string name="blocks_days_weekend">Weekend</string>
+    <string name="blocks_days_all">Every day</string>
+    <string name="blocks_all_day">All day</string>
     <string name="blocks_save">Save</string>
     <string name="blocks_problem_nothing">Choose at least one app or site</string>
     <string name="blocks_problem_no_spans">Add its hours</string>
@@ -449,7 +454,7 @@
     <string name="blocks_remove_locked">It can be removed once it ends: %s</string>
     <string name="blocks_remove_title">Remove “%s”?</string>
     <string name="blocks_remove_text">Its apps and sites can be used again.</string>
-    <string name="guide_blocks_how">Settings → Blocks: follow the three access steps on the phone, then choose apps, sites and hours. ADB is optional for additional protection</string>
+    <string name="guide_blocks_how">Settings → Blocks: follow the three access steps on the phone, then choose apps, sites and hours: as many ranges as you need, and a chart of the week shows what they cover. ADB is optional for additional protection</string>
     <string name="guide_blocks_locked">While a block runs</string>
     <string name="guide_blocks_locked_how">It can only grow. Its apps go home whatever opens them, its sites go back in any browser, their notifications wait until it ends, their sound pauses, and the settings that would undo it are out of reach</string>
     <string name="guide_blocks_limits">What it does not stop</string>

@@ -98,6 +98,22 @@ fun nextChange(rules: List<Rule>, t: LocalDateTime): LocalDateTime? {
 fun millisBetween(from: LocalDateTime, to: LocalDateTime, zone: ZoneId = ZoneId.systemDefault()): Long =
     Duration.between(from.atZone(zone), to.atZone(zone)).toMillis()
 
+/** The runs of minutes (0 to 60) [c] covers in [hour] of [day] (0: Monday): one cell of the week chart. */
+fun hourRuns(c: BooleanArray, day: Int, hour: Int): List<IntRange> {
+    val base = day * DAY_MINUTES + hour * 60
+    val runs = mutableListOf<IntRange>()
+    var from = -1
+    for (m in 0..60) {
+        val on = m < 60 && c[base + m]
+        if (on && from < 0) from = m
+        if (!on && from >= 0) {
+            runs += from until m
+            from = -1
+        }
+    }
+    return runs
+}
+
 /** The longest run of minutes [c] leaves free, a run across Sunday night into Monday counted whole. */
 fun freeRun(c: BooleanArray): Int {
     val last = c.indexOfLast { it }

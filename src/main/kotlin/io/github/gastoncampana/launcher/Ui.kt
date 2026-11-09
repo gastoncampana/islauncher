@@ -106,6 +106,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.verticalScroll
@@ -197,11 +198,13 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.Typeface
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -2908,6 +2911,7 @@ private fun BlocksSettings(l: Launcher) {
         ).joinToString(" · ")
         SettingRow(r.name.ifBlank { stringResource(R.string.blocks_unnamed) }, summary, { l.popup = Popup.EditBlock(r.id) }) {
             if (until != null) GlyphIcon(LOCK, ACCENT, Modifier.padding(12.dp))
+            WeekChart(r.spans, Modifier.size(35.dp, 48.dp), labels = false)
         }
     }
     if (setup.complete) AddRow(stringResource(R.string.blocks_add)) { l.popup = Popup.EditBlock(null) }
@@ -2938,8 +2942,56 @@ private fun BlocksSettings(l: Launcher) {
 /** "lun, mar, mié · 09:00–18:00", in the phone's language and time format. */
 private fun spanText(context: Context, s: Span): String {
     val days = if (s.days.size == 7) context.getString(R.string.blocks_every_day)
-    else DayOfWeek.entries.filter { it in s.days }.joinToString(", ") { it.getDisplayName(DayStyle.SHORT_STANDALONE, Locale.getDefault()) }
+    else DAY_GROUPS.firstOrNull { it.second == s.days }?.let { context.getString(it.first) }
+        ?: DayOfWeek.entries.filter { it in s.days }.joinToString(", ") { it.getDisplayName(DayStyle.SHORT_STANDALONE, Locale.getDefault()) }
+    if (s.start == 0 && s.end == DAY_MINUTES) return context.getString(R.string.blocks_span_all_day, days)
     return context.getString(R.string.blocks_span_summary, days, minuteText(context, s.start), minuteText(context, s.end % DAY_MINUTES))
+}
+
+/** The day sets a tap picks in a new range, by name; the summaries name them too. */
+private val DAY_GROUPS = listOf(
+    R.string.blocks_days_weekdays to DayOfWeek.entries.take(5).toSet(),
+    R.string.blocks_days_weekend to setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY),
+    R.string.blocks_days_all to DayOfWeek.entries.toSet(),
+)
+
+/**
+ * The week as small blocks, as a calendar shows it: a column a day, an hour a row from the top, filled for the minutes
+ * [spans] cover. Without [labels], a thumbnail. Hidden from TalkBack: the ranges are listed in words next to it.
+ */
+@Composable
+private fun WeekChart(spans: List<Span>, modifier: Modifier = Modifier, labels: Boolean = true) {
+    val covered = remember(spans) { coverage(spans) }
+    val locale = LocalConfiguration.current.locales[0]
+    val measurer = rememberTextMeasurer()
+    val style = TextStyle(color = HINT, fontSize = 11.sp)
+    Canvas(modifier.clearAndSetSemantics {}) {
+        val colGap = (if (labels) 3.dp else 1.dp).toPx()
+        val rowGap = if (labels) 1.dp.toPx() else 0f
+        val left = if (labels) 22.dp.toPx() else 0f // the hours' labels
+        val top = if (labels) 22.dp.toPx() else 0f // the days'
+        val colW = (size.width - left - colGap * 6) / 7
+        val rowH = (size.height - top - rowGap * 23) / 24
+        for (day in DayOfWeek.entries) {
+            val d = day.value - 1
+            val x0 = (left + d * (colW + colGap)).roundToInt().toFloat()
+            val x1 = (left + d * (colW + colGap) + colW).roundToInt().toFloat()
+            if (labels) {
+                val name = measurer.measure(day.getDisplayName(DayStyle.NARROW_STANDALONE, locale), style)
+                drawText(name, topLeft = Offset((x0 + x1 - name.size.width) / 2, 0f))
+            }
+            for (hour in 0 until 24) {
+                fun y(m: Int) = (top + hour * (rowH + rowGap) + rowH * m / 60f).roundToInt().toFloat()
+                drawRect(TAB_OFF, Offset(x0, y(0)), Size(x1 - x0, y(60) - y(0)))
+                for (run in hourRuns(covered, d, hour)) drawRect(ACCENT, Offset(x0, y(run.first)), Size(x1 - x0, y(run.last + 1) - y(run.first)))
+            }
+        }
+        if (labels) for (hour in listOf(0, 6, 12, 18, 24)) {
+            val text = measurer.measure("$hour", style)
+            val y = top + hour * (rowH + rowGap) - rowGap / 2
+            drawText(text, topLeft = Offset(0f, (y - text.size.height / 2f).coerceIn(top - text.size.height / 2f, size.height - text.size.height)))
+        }
+    }
 }
 
 /** Minute [m] of a day in the phone's time format: "18:00" or "6:00 p. m.". On a day with no clock change. */
@@ -3047,6 +3099,7 @@ private fun BlockEditor(l: Launcher, p: Popup.EditBlock) {
                     SettingRow(IDN.toUnicode(host)) { Trash(kept?.sites?.contains(host) == true) { draft = draft.copy(sites = draft.sites - host) } }
                 }
                 Header(stringResource(R.string.blocks_hours))
+                if (draft.spans.isNotEmpty()) WeekChart(draft.spans, Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp).fillMaxWidth().height(260.dp))
                 draft.spans.forEachIndexed { i, s ->
                     SettingRow(spanText(l, s)) { Trash(kept?.spans?.contains(s) == true) { draft = draft.copy(spans = draft.spans.filterIndexed { j, _ -> j != i }) } }
                 }
@@ -3118,9 +3171,10 @@ private fun SpanDialog(l: Launcher, onDone: (Span) -> Unit, onDismiss: () -> Uni
     var days by remember { mutableStateOf(setOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)) }
     var start by remember { mutableIntStateOf(9 * 60) }
     var end by remember { mutableIntStateOf(18 * 60) }
+    var allDay by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf<Boolean?>(null) } // true: the start, false: the end
     val haptic = rememberHaptic(l)
-    val span = span(days, start, end)
+    val span = if (allDay) Span(days, 0, DAY_MINUTES) else span(days, start, end)
     val locale = LocalConfiguration.current.locales[0] // observed: the day names follow a language change
     @Composable
     fun TimeRow(label: Int, minutes: Int, onClick: () -> Unit) = Row(
@@ -3135,6 +3189,24 @@ private fun SpanDialog(l: Launcher, onDone: (Span) -> Unit, onDismiss: () -> Uni
         title = { DialogTitle(stringResource(R.string.blocks_add_hours)) },
         text = {
             Column {
+                Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), Arrangement.spacedBy(8.dp)) {
+                    for ((name, group) in DAY_GROUPS) {
+                        val on = days == group
+                        Text(
+                            stringResource(name),
+                            Modifier
+                                .clip(CircleShape)
+                                .background(if (on) ACCENT else TAB_OFF)
+                                .selectable(on, role = Role.RadioButton) {
+                                    days = group
+                                    haptic(HapticFeedbackType.ToggleOn)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = if (on) Color.Black else TAB_OFF_TEXT,
+                            fontSize = 14.sp,
+                        )
+                    }
+                }
                 Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                     for (d in DayOfWeek.entries) {
                         val on = d in days
@@ -3154,8 +3226,22 @@ private fun SpanDialog(l: Launcher, onDone: (Span) -> Unit, onDismiss: () -> Uni
                         }
                     }
                 }
-                TimeRow(R.string.blocks_from, start) { picking = true }
-                TimeRow(R.string.blocks_to, end % DAY_MINUTES) { picking = false }
+                Row(
+                    Modifier.padding(top = 8.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                        .toggleable(allDay, role = Role.Switch) {
+                            allDay = it
+                            haptic(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.blocks_all_day), Modifier.weight(1f), fontSize = 16.sp)
+                    Switch(allDay, null)
+                }
+                if (!allDay) {
+                    TimeRow(R.string.blocks_from, start) { picking = true }
+                    TimeRow(R.string.blocks_to, end % DAY_MINUTES) { picking = false }
+                }
                 if (span.end < span.start) Text(stringResource(R.string.blocks_next_day), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             }
         },

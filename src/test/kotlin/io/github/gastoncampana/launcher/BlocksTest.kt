@@ -239,6 +239,19 @@ class BlocksTest {
     }
 
     @Test
+    fun theWeekChartFillsTheMinutesEachHourIsCovered() {
+        // Leisure: weekday evenings into the next morning, weekends whole, and half an hour on Monday.
+        val c = coverage(listOf(span(weekdays, 18 * 60, 9 * 60), span(setOf(SATURDAY, SUNDAY), 0, 0), span(setOf(MONDAY), 12 * 60 + 30, 13 * 60)))
+        assertEquals(emptyList<IntRange>(), hourRuns(c, 0, 3)) // Monday night is free: Sunday ends at midnight
+        assertEquals(listOf(0 until 60), hourRuns(c, 1, 3)) // Tuesday night, from Monday evening
+        assertEquals(listOf(30 until 60), hourRuns(c, 0, 12))
+        assertEquals(emptyList<IntRange>(), hourRuns(c, 4, 12))
+        assertEquals(listOf(0 until 60), hourRuns(c, 6, 23))
+        val split = coverage(listOf(span(setOf(TUESDAY), 10 * 60 + 15, 10 * 60 + 20), span(setOf(TUESDAY), 10 * 60 + 40, 11 * 60)))
+        assertEquals(listOf(15 until 20, 40 until 60), hourRuns(split, 1, 10))
+    }
+
+    @Test
     fun aBackupCarriesTheBlocksBesideTheLayout() {
         val layout = Layout(poisons = setOf("a/b#0"))
         val json = backupJson(layout, listOf(work, night))

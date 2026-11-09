@@ -236,8 +236,10 @@ A launcher sees every app you have and every app you open, so this one is built 
 <details>
 <summary><strong>Blocks</strong></summary>
 
-- Settings → Blocks: each block has a name, apps, sites and weekly hours (days, a start and an end; an end before the
-  start runs into the next day). During its hours:
+- Settings → Blocks: each block has a name, apps, sites and weekly hours, as many ranges as you need (days, a start and
+  an end; an end before the start runs into the next day). Weekdays, Weekend and Every day pick the days in one tap,
+  and All day skips the times. A chart of the week, a column a day and a row an hour as in a calendar, shows what the block covers, and a
+  thumbnail of it sits next to each block in the list. During its hours:
   - its apps go home as soon as they show, whatever opened them: the launcher, Recents, a notification, another app
     or a call (the phone and SMS apps, Settings, the home app in use and Islauncher itself cannot be blocked);
   - its sites go back in any browser, or home when going back leaves them there. A site blocks its subdomains too

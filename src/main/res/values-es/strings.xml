@@ -455,6 +455,11 @@
     <string name="blocks_next_day">Termina al día siguiente</string>
     <string name="blocks_every_day">Todos los días</string>
     <string name="blocks_span_summary">%1$s · %2$s–%3$s</string>
+    <string name="blocks_span_all_day">%1$s · todo el día</string>
+    <string name="blocks_days_weekdays">Hábiles</string>
+    <string name="blocks_days_weekend">Fin de semana</string>
+    <string name="blocks_days_all">Todos</string>
+    <string name="blocks_all_day">Todo el día</string>
     <string name="blocks_save">Guardar</string>
     <string name="blocks_problem_nothing">Elegí al menos una app o un sitio</string>
     <string name="blocks_problem_no_spans">Agregá sus horarios</string>
@@ -465,7 +470,7 @@
     <string name="blocks_remove_locked">Se va a poder quitar cuando termine: %s</string>
     <string name="blocks_remove_title">¿Quitar “%s”?</string>
     <string name="blocks_remove_text">Sus apps y sitios se van a poder usar de nuevo.</string>
-    <string name="guide_blocks_how">Ajustes → Bloqueos: seguí los tres pasos de acceso en el teléfono y elegí apps, sitios y horarios. ADB es opcional para una protección adicional</string>
+    <string name="guide_blocks_how">Ajustes → Bloqueos: seguí los tres pasos de acceso en el teléfono y elegí apps, sitios y horarios: todos los rangos que necesites, y un gráfico de la semana muestra qué horas cubren. ADB es opcional para una protección adicional</string>
     <string name="guide_blocks_locked">Mientras corre un bloqueo</string>
     <string name="guide_blocks_locked_how">Solo puede agrandarse. Sus apps vuelven al inicio las abra lo que las abra, sus sitios vuelven atrás en cualquier navegador, sus notificaciones esperan a que termine, su sonido se pausa, y los ajustes que lo deshacen quedan fuera de alcance</string>
     <string name="guide_blocks_limits">Lo que no frena</string>
