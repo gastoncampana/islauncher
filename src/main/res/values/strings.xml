@@ -366,9 +366,9 @@
     <string name="guide_double_tap_how">Tap an empty spot twice to open the app you pick in Settings → Gestures</string>
     <string name="guide_home">Home button</string>
     <string name="guide_home_how">Closes whatever is open: a menu, the drawer or Settings. With nothing open on the home screen, it goes to the main page, and on the main page it opens search</string>
-    <string name="guide_haptics_how">A light vibration on long presses, drops, throws and swipes; you can turn it off in Settings → Gestures</string>
+    <string name="guide_haptics_how">A light vibration on long presses, drops, throws, swipes, the double tap, each step of a widget\'s resize and settings controls; you can turn it off in Settings → Gestures</string>
     <string name="guide_open_settings">Open Settings</string>
-    <string name="guide_open_settings_how">Long-press an empty spot on the home screen → Settings</string>
+    <string name="guide_open_settings_how">Long-press an empty spot on the home screen, or the search bar → Settings</string>
     <string name="guide_home_app_how">Settings → Home app: pick Islauncher, so the Home button opens it; only then do an app\'s shortcuts and shortcuts from other apps work</string>
     <string name="guide_backup">Manual backup</string>
     <string name="guide_backup_how">Save the home screen, dock, tabs, settings and blocks to a file and restore them later (a restore only adds the blocks you lack); after a reinstall, add home screen shortcuts again from their app</string>

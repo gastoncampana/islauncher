@@ -379,9 +379,9 @@
     <string name="guide_double_tap_how">Tocá dos veces un lugar vacío para abrir la app que elijas en Ajustes → Gestos</string>
     <string name="guide_home">Botón de inicio</string>
     <string name="guide_home_how">Cierra lo que esté abierto: un menú, el cajón o Ajustes. Sin nada abierto en el escritorio, vuelve a la página principal, y en la principal abre la búsqueda</string>
-    <string name="guide_haptics_how">Una vibración suave al mantener presionado, soltar, tirar y deslizar; la podés apagar en Ajustes → Gestos</string>
+    <string name="guide_haptics_how">Una vibración suave al mantener presionado, soltar, tirar, deslizar, tocar dos veces, en cada paso al cambiar el tamaño de un widget y en los controles de Ajustes; la podés apagar en Ajustes → Gestos</string>
     <string name="guide_open_settings">Abrir Ajustes</string>
-    <string name="guide_open_settings_how">Mantené presionado un lugar vacío del escritorio → Ajustes</string>
+    <string name="guide_open_settings_how">Mantené presionado un lugar vacío del escritorio o la barra de búsqueda → Ajustes</string>
     <string name="guide_home_app_how">Ajustes → App de inicio: elegí Islauncher para que el botón de inicio lo abra; solo así andan los atajos de una app y los de otras apps</string>
     <string name="guide_backup">Copia manual</string>
     <string name="guide_backup_how">Guardá el escritorio, el dock, las pestañas, los ajustes y los bloqueos en un archivo y restauralos después (restaurar solo suma los bloqueos que falten); tras reinstalar, los atajos del escritorio se vuelven a agregar desde su app</string>

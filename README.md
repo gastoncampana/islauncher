@@ -140,7 +140,7 @@ A launcher sees every app you have and every app you open, so this one is built 
 - The menu also moves an item to another page, picked from a list that marks the main page. The item keeps its spot
   there if it is free, else it takes the nearest free one, and if the page has no room a message says so.
 - An icon can be renamed from its menu. The new name is that icon's only: the drawer and search keep the app's name.
-- Long-press an empty spot to add a widget, change the wallpaper or open the settings.
+- Long-press an empty spot, or the search bar, to add a widget, change the wallpaper or open the settings.
 - Icons on the desktop, in the dock and in the drawer shrink a little under your finger and spring back.
 - Widgets come from a searchable picker, grouped by app, that shows each widget's preview and size in cells. The
   preview is the one its app generates (Android 15+, once the launcher may bind widgets), else its preview layout,
@@ -171,7 +171,8 @@ A launcher sees every app you have and every app you open, so this one is built 
 - One dock page is the main one, marked with a house in Settings → Dock. The dock starts on it and goes back to it
   whenever you leave the home screen, such as after opening an app.
 - Each icon opens one app on tap and can open other apps on a swipe up or down. Long-press a slot for its menu: the
-  app's shortcuts, Configure and app info (a slot with no app goes straight to Configure). Configure shows what the tap
+  app's shortcuts, Configure, Remove (the tap's app; the swipes stay) and app info (a slot with no app goes straight
+  to Configure). Configure shows what the tap
   and each swipe open, and its app picker brings you back to it, so all three can be set in one go. An icon without its own swipe actions opens the drawer or
   the notification shade, as a swipe does elsewhere on the home screen.
 - Drop an app from the drawer or the desktop onto an empty dock slot.
@@ -184,7 +185,7 @@ A launcher sees every app you have and every app you open, so this one is built 
 - Tabs, swiped sideways like pages:
   - an all-apps tab, plus tabs of apps you pick
   - a picked tab can take its apps out of the all-apps tabs, as new tabs do by default
-  - long-press a tab to rename it, add a tab or remove a picked one; the settings also reorder them, and pick a
+  - long-press a tab to rename it, add a tab or remove a picked one (after asking, when it has apps); the settings also reorder them, and pick a
     tab's apps from a list of all apps, which a new tab opens right after its name
 - Hidden apps are left out of every tab, but search still finds them.
 - Installed Chromium WebAPKs and browser web shortcuts accepted by Islauncher appear in the drawer and search.

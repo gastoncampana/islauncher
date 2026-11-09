@@ -324,6 +324,8 @@ class Launcher : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val alreadyHome = hasWindowFocus() && intent.flags and Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT == 0
+        // Back from another app (a browser, to check a site) to a block being edited: it stays, with Ajustes under it.
+        if (!alreadyHome && popup is Popup.EditBlock) return
         // In-window overlays (Ajustes, the widget picker) keep the focus: home only closes them, like a dialog.
         if (alreadyHome && !drawerOpen && !settingsOpen && popup == null) homePresses++
         settingsOpen = false
@@ -334,7 +336,9 @@ class Launcher : ComponentActivity() {
         super.onStop()
         host.stopListening()
         settle() // leaving ends the undo of a thrown item
-        closeAll() // come back to a clean home screen after opening an app
+        // Come back to a clean home screen after opening an app, but to a block being edited as it was.
+        drawerOpen = false
+        if (popup !is Popup.EditBlock) popup = null
         hideDrawer() // gone on return, rather than fading out then
         dockResets++ // and with the dock on its main page
     }
@@ -686,6 +690,7 @@ class Launcher : ComponentActivity() {
         val page = layout.defaultPage
         val cell = layout.freeCell(page, 1f, 1f) ?: return toast(getString(R.string.desktop_no_room_main))
         updatePage(page) { it + Item.Icon(target, label, cell) }
+        if (hides(target)) toast(getString(R.string.paused_placed, label)) // placed out of sight, as a drop says
     }
 
     fun remove(page: Int, item: Item) {

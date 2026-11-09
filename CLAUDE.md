@@ -157,7 +157,9 @@ the time automatic during a block).
   toast saying it is paused.
   Bloqueos is `Section.BLOCKS` (`BlocksSettings`): the three user-granted setup steps (read again on each `Launcher.resumes`), optional secure settings protection, the blocks,
   the browsers and whether their bar was read; `Popup.EditBlock` is the full-screen `BlockEditor`, whose trash on what
-  a running block had only says so, and whose save checks `problemSaving` again as it saves.
+  a running block had only says so, and whose save checks `problemSaving` again as it saves. It is the one popup that
+  outlives leaving the home screen: `onStop` keeps it, and `onNewIntent` from another app leaves it and Ajustes open
+  (its draft lives in its composition; Home pressed while it shows still closes it).
 - The layout is stored as JSON in SharedPreferences `launcher`, key `layout`; key `launched` marks the first launch, for
   `opensGuide`. An unreadable layout is kept under
   `layout.corrupt` instead of being overwritten. Prefs `opens` counts today's opens of poison apps; prefs `usage`

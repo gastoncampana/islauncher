@@ -424,7 +424,8 @@ private fun Home(l: Launcher, mover: Mover) {
             PageLine(pager)
             // A hidden dock takes no drops: they land on the desktop.
             if (layout.showDock) Dock(l, mover) else SideEffect { mover.dock = Rect.Zero }
-            if (layout.showSearchBar) SearchPill(l)
+            // Its long press opens the empty spot's menu too: a page with no empty spot would leave no way to Ajustes.
+            if (layout.showSearchBar) SearchPill(l) { l.popup = Popup.DesktopMenu(pager.currentPage, Offset(0f, mover.bounds.height)) }
         }
         mover.drag?.let { d ->
             val size = with(LocalDensity.current) { d.size.toSize().toDpSize() }
@@ -948,6 +949,8 @@ private fun DockSlot(l: Launcher, virtualPage: Int, slot: Int, icon: DockIcon, i
         DropdownMenu(open && shortcuts != null, { l.popup = null }) {
             if (app != null) AppShortcuts(l, app, shortcuts.orEmpty())
             MenuItem(l, stringResource(R.string.dock_configure)) { l.popup = Popup.DockSetup(page, slot) }
+            // The tap only: the slot keeps its swipes, which Configurar, opened by a long press on it, still shows.
+            MenuItem(l, stringResource(R.string.remove)) { l.updateDock(page, slot) { it.copy(tap = null) } }
             // No Desinstalar here: Info de la app has it.
             app?.let { MenuItem(l, stringResource(R.string.menu_app_info)) { l.showInfo(it) } }
         }
@@ -957,7 +960,8 @@ private fun DockSlot(l: Launcher, virtualPage: Int, slot: Int, icon: DockIcon, i
 // --- Search bar: search, assistant, Lens and the date. Nova's weather needs the network, so it is left out. ---
 
 @Composable
-private fun SearchPill(l: Launcher) {
+private fun SearchPill(l: Launcher, onLongClick: () -> Unit) {
+    val haptic = rememberHaptic(l)
     Row(
         Modifier
             .padding(start = 16.dp, end = 16.dp, top = 19.dp, bottom = 23.dp)
@@ -965,7 +969,15 @@ private fun SearchPill(l: Launcher) {
             .height(44.dp)
             .clip(CircleShape)
             .background(Color.Black)
-            .clickable { l.openSearch() }
+            .combinedClickable(
+                hapticFeedbackEnabled = false, // its own would bypass the setting
+                onLongClickLabel = stringResource(R.string.settings),
+                onLongClick = {
+                    haptic(HapticFeedbackType.LongPress)
+                    onLongClick()
+                },
+                onClick = l::openSearch,
+            )
             .padding(start = 14.dp, end = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1294,8 +1306,18 @@ private fun Tabs(l: Launcher, selected: Int, onSelect: (Int) -> Unit) {
                     MenuItem(l, stringResource(R.string.drawer_new_tab)) { l.popup = newTab(l) }
                     if (tab.apps != null) {
                         MenuItem(l, stringResource(R.string.delete)) {
-                            onSelect(0)
-                            l.update { it.copy(tabs = it.tabs.filterIndexed { j, _ -> j != i }) }
+                            val remove = {
+                                onSelect(0)
+                                l.update { it.copy(tabs = it.tabs.filterIndexed { j, _ -> j != i }) }
+                            }
+                            // As Ajustes does: a tab of picked apps is a list made by hand.
+                            if (tab.apps.isEmpty()) remove()
+                            else l.popup = Popup.Confirm(
+                                l.getString(R.string.drawer_remove_tab_title, tab.name),
+                                l.getString(R.string.drawer_remove_tab_text),
+                                l.getString(R.string.remove),
+                                remove,
+                            )
                         }
                     }
                 }
@@ -2117,7 +2139,7 @@ private fun PreviewIcons(l: Launcher, targets: List<Target?>, columns: Int, nova
 /** The drawer as it opens: its tabs with the first one on, and a row of that tab's apps. */
 @Composable
 private fun DrawerPreview(l: Launcher, layout: Layout) = Column(Modifier.fillMaxWidth().background(Color.Black)) {
-    // Bubbles, not Tabs: its long press would bring the drawer's unconfirmed "Eliminar" into Ajustes.
+    // Bubbles, not Tabs: its long press would bring the drawer's tab menu into Ajustes.
     LazyRow(Modifier.padding(top = TAB_GAP), contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(layout.tabs) { i, tab -> Bubble(tab.name, i == 0, Modifier) }
     }
