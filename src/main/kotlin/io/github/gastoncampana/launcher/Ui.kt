@@ -186,6 +186,7 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.platform.LocalConfiguration
@@ -208,9 +209,11 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -425,7 +428,7 @@ private fun Home(l: Launcher, mover: Mover) {
             // A hidden dock takes no drops: they land on the desktop.
             if (layout.showDock) Dock(l, mover) else SideEffect { mover.dock = Rect.Zero }
             // Its long press opens the empty spot's menu too: a page with no empty spot would leave no way to Ajustes.
-            if (layout.showSearchBar) SearchPill(l) { l.popup = Popup.DesktopMenu(pager.currentPage, Offset(0f, mover.bounds.height)) }
+            if (layout.showSearchBar) SearchPill(l) { at -> l.popup = Popup.DesktopMenu(pager.currentPage, at - mover.bounds.topLeft) }
         }
         mover.drag?.let { d ->
             val size = with(LocalDensity.current) { d.size.toSize().toDpSize() }
@@ -960,13 +963,22 @@ private fun DockSlot(l: Launcher, virtualPage: Int, slot: Int, icon: DockIcon, i
 // --- Search bar: search, assistant, Lens and the date. Nova's weather needs the network, so it is left out. ---
 
 @Composable
-private fun SearchPill(l: Launcher, onLongClick: () -> Unit) {
+private fun SearchPill(l: Launcher, onLongClick: (Offset) -> Unit) {
     val haptic = rememberHaptic(l)
+    // Where the finger went down, in root coordinates, for the menu to open there; TalkBack's long press has none.
+    val press = remember { object { var origin = Offset.Zero; var size = IntSize.Zero; var down: Offset? = null } }
     Row(
         Modifier
             .padding(start = 16.dp, end = 16.dp, top = 19.dp, bottom = 23.dp)
             .fillMaxWidth()
             .height(44.dp)
+            .onGloballyPositioned {
+                press.origin = it.positionInRoot()
+                press.size = it.size
+            }
+            .pointerInput(Unit) {
+                awaitEachGesture { press.down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial).position }
+            }
             .clip(CircleShape)
             .background(Color.Black)
             .combinedClickable(
@@ -974,7 +986,8 @@ private fun SearchPill(l: Launcher, onLongClick: () -> Unit) {
                 onLongClickLabel = stringResource(R.string.settings),
                 onLongClick = {
                     haptic(HapticFeedbackType.LongPress)
-                    onLongClick()
+                    onLongClick(press.origin + (press.down ?: press.size.center.toOffset()))
+                    press.down = null
                 },
                 onClick = l::openSearch,
             )
